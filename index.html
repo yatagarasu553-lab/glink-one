@@ -377,6 +377,17 @@ function setupMobileCounters(){
  }
 }
 setupMobileCounters();
-
-initCloudForm();drawDailyGoalEditor();renderDailyGoals();
+function setupFormDrafts(){
+ for(const formId of ['dealForm','reportForm']){
+  const form=$(formId);if(!form)continue;
+  const key='glink-form-draft-'+formId+'-'+(cloudSession?.user?.id||'device');
+  const controls=[...form.querySelectorAll('input:not([type=hidden]),select,textarea')].filter(el=>el.id);
+  try{const raw=JSON.parse(localStorage.getItem(key)||'null');if(raw)for(const el of controls)if(raw[el.id]!==undefined)el.value=raw[el.id]}catch{}
+  const save=()=>{const draft={};for(const el of controls)draft[el.id]=el.value;try{localStorage.setItem(key,JSON.stringify(draft))}catch{}};
+  form.addEventListener('input',save);form.addEventListener('change',save);
+  const notice=document.createElement('p');notice.className='muted micro';notice.textContent='入力途中の内容はこの端末に保存されます。通信エラーの場合は再接続後に「登録」を押してください（自動送信はしません）。';form.insertBefore(notice,form.querySelector('button[type=submit]'));
+  form.addEventListener('submit',()=>{setTimeout(()=>{if(formId==='dealForm'&&$('catchDeals').value==='0'&&$('closeDeals').value==='0')localStorage.removeItem(key)},1200)});
+ }
+}
+initCloudForm();setupFormDrafts();drawDailyGoalEditor();renderDailyGoals();
 </script></body></html>
