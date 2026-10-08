@@ -118,7 +118,8 @@ async function editCloudDeal(id){
  data.deals=(data.catchDeals+data.closeDeals)*0.5;
  if(data.deals>100||!confirm('換算 '+data.deals+'件、売上 '+yen(data.sales)+' に修正しますか？'))return;
  try{
-  await authorized(()=>cloudFetch('/rest/v1/staff_submissions?id=eq.'+encodeURIComponent(id)+'&team_id=eq.'+encodeURIComponent(cloudCfg.team),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({payload:data,updated_at:new Date().toISOString()})}));
+  const updated=await authorized(()=>cloudFetch('/rest/v1/staff_submissions?id=eq.'+encodeURIComponent(id)+'&team_id=eq.'+encodeURIComponent(cloudCfg.team),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({payload:data,updated_at:new Date().toISOString()})}));
+  if(!Array.isArray(updated)||updated.length!==1)throw Error('更新権限がないか対象の実績が変更されています');
   await loadStaffSubmissions();alert('修正しました。ランキングにも反映しました。');
  }catch(e){alert('修正できません：'+e.message)}
 }
