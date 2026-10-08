@@ -245,7 +245,6 @@ function dailyStoreActual(date){
  if(result.sb===undefined&&sbKeys.every(k=>day[k]!==undefined))result.sb=sbKeys.reduce((t,k)=>t+day[k],0);
  if(result.ym===undefined&&day.yMnp!==undefined&&day.yNew!==undefined)result.ym=day.yMnp+day.yNew;
  if(result.external===undefined&&result.sb!==undefined&&result.ym!==undefined)result.external=result.sb+result.ym;
- if(result.external===undefined&&day.sy!==undefined)result.external=day.sy;
  return result;
 }
 function renderDailyGoals(){
