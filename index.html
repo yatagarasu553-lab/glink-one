@@ -346,7 +346,22 @@ function showPendingRecovery(){
  const draft=hasPendingCloud();const el=$('storeChangeHistory');if(!el||!draft)return;
  const row=document.createElement('div');row.className='warn';row.textContent='未送信の共有データ（'+(draft.savedAt||'日時不明')+'）があります。最新情報取得は安全のため停止中です。';
  const btn=document.createElement('button');btn.className='btn secondary';btn.textContent='未送信データを端末へ復元';btn.onclick=()=>{if(activeRole!=='admin')return alert('管理者専用');if(!valid(draft.payload))return alert('保存データが不正です');if(!confirm('未送信の端末データを画面に復元します。クラウドには自動上書きしません。'))return;state=draft.payload;upgrade();cloudDirty=true;cloudReady=false;localStorage.setItem(KEY,JSON.stringify(state));render();cloudStatus('未送信のデータを復元しました。クラウドへの反映には競合確認が必要です。',true)};
- row.appendChild(btn);el.prepend(row);
+ row.appendChild(btn);
+ const retry=document.createElement('button');retry.className='btn';retry.textContent='安全に再同期';retry.onclick=async()=>{
+  if(!cloudSession||activeRole!=='admin')return alert('管理者としてログインしてください');
+  if(!valid(draft.payload))return alert('未送信データが不正です');
+  try{
+   const remote=await readCloud();
+   if(Number(remote.revision)!==Number(draft.revision))return alert('他の端末で更新がありました。上書きせず停止しました。管理者に差分確認を依頼してください。');
+   if(!confirm('クラウド版'+remote.revision+'と一致しました。未送信データをクラウドに送信しますか？'))return;
+   state=draft.payload;upgrade();cloudRevision=remote.revision;cloudReady=true;cloudDirty=true;savePendingCloud();cloudSchedule();render();cloudStatus('未送信データを送信中。TEAM SYNCを確認してください。');
+  }catch(e){alert('接続できません：'+e.message)}
+ };row.appendChild(retry);
+ const discard=document.createElement('button');discard.className='btn secondary';discard.textContent='端末の未送信版を破棄';discard.onclick=()=>{
+  if(!confirm('未送信の変更を破棄し、クラウドの数字を読み込みますか？')||!confirm('最終確認：この端末の未送信の変更は失われます。'))return;
+  clearPendingCloud();cloudDirty=false;cloudReady=true;cloudDownload().catch(e=>cloudStatus('再取得失敗：'+e.message,true));
+ };row.appendChild(discard);
+ el.prepend(row);
 }
 function setupMobileCounters(){
  for(const id of ['catchDeals','closeDeals','adc','insurance','catchCount','stopCount','inviteCount','talkCount']){
