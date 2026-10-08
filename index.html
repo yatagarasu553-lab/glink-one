@@ -54,6 +54,7 @@ function renderPasteExtras(){const m=nowDay().slice(0,7), goals=state.targets[m]
  $('pasteHistory').innerHTML=state.storeReports.length?[...state.storeReports].reverse().map(r=>`<div class="entry"><div class="row"><b>${escapeHtml(r.date)} ${escapeHtml(r.store||'')} </b><button class="tinybtn" data-remove-paste="${escapeHtml(r.date)}">削除</button></div><div class="muted micro">当日 ${Object.keys(r.day).length}項目 / 累計 ${Object.keys(r.cum).length}項目</div></div>`).join(''):'<p class="muted micro">保存された店舗報告はありません。</p>';
  document.querySelectorAll('[data-remove-paste]').forEach(b=>b.onclick=()=>{if(confirm(b.dataset.removePaste+' の報告を削除しますか？')){state.storeReports=state.storeReports.filter(x=>x.date!==b.dataset.removePaste);persist();render()}});
 }
+const DAILY_GOAL_KEYS=[['external','対外（SB＋YM）'],['device','機変'],['ys','YS'],['adc','ADC'],['insurance','あんスマ']];
 const oldRender=render;render=function(){oldRender();renderPasteExtras()};
 let pending=null;
 $('exampleBtn').onclick=()=>{$('pasteInput').value=`10/8 富谷 結果報告\nSY合算 0台\nS HS MNP対外 0台\nS HS 純新規 0台\nS SIM MNP 対外 0件\nS SIM 新規 対外 0件\nY MNP 対外 0件\nY 新規 0件\n機変 0台\nYS 0台\n保険 0件 端末添付率 0%\nADC 0件\n物販 0台\n固定 0件\nでんき 0件\nCostco売上 ￥\n累計\n対外新規 10 /230\nSB対外 6 /79\nYM対外 4 /151\n機変 8 /27\nYS 4 /31\n物販 0\n固定 2 /30\nでんき 0 /18\n保険 3 /63\nADC 0 /54\nCostco売上 (¥ 3,740,014) /￥13,604,000`; $('parseBtn').click()};
@@ -233,7 +234,6 @@ $('safeBackup').onclick=()=>{
 };
 
 
-const DAILY_GOAL_KEYS=[['external','対外（SB＋YM）'],['device','機変'],['ys','YS'],['adc','ADC'],['insurance','あんスマ']];
 function drawDailyGoalEditor(){
  const date=$('dailyGoalDate').value||nowDay(),current=state.dailyTargets?.[date]||{};
  $('dailyGoalFields').innerHTML=DAILY_GOAL_KEYS.map(([k,title])=>'<label for="dg_'+k+'">'+escapeHtml(title)+'</label><input id="dg_'+k+'" type="number" min="0" step="1" placeholder="未設定" value="'+(current[k]??'')+'">').join('');
