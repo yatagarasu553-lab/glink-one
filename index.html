@@ -250,12 +250,20 @@ function dailyStoreActual(date){
 }
 function renderDailyGoals(){
  const date=nowDay(),goals=state.dailyTargets?.[date]||{},actual=dailyStoreActual(date);
- $('dailyGoalView').innerHTML='<p class="muted micro">'+escapeHtml(date)+' ・ 店舗の当日報告に基づく達成率（個人実績との二重集計なし）</p>'+DAILY_GOAL_KEYS.map(([k,title])=>{
-  const goal=goals[k],n=actual[k],known=n!==undefined,validGoal=goal!==undefined&&goal!==null;
-  if(!validGoal)return '';
+ const configured=DAILY_GOAL_KEYS.filter(([k])=>goals[k]!==null&&goals[k]!==undefined);
+ $('dailyGoalView').innerHTML='<p class="muted micro">'+escapeHtml(date)+' ・ 当日の店舗結果報告で集計（個人実績とは二重計上しません）</p>'+
+ configured.map(([k,title])=>{
+  const goal=goals[k],n=actual[k],known=n!==undefined;
   const pct=known&&goal>0?Math.round(n/goal*100):null;
-  return '<div class="goalrow"><div>'+escapeHtml(title)+'<div class="muted micro">'+(known?(k==='sales'?yen(n):n+'件'):'当日実績未報告')+' / '+(k==='sales'?yen(goal):goal+'件')+'</div></div><b>'+(pct===null?'—':pct+'%')+'</b><div class="bar"><div style="width:'+(pct===null?0:Math.min(100,pct))+'%"></div></div></div>';
- }).join('')+(DAILY_GOAL_KEYS.some(([k])=>goals[k]!==null&&goals[k]!==undefined)?'':'<p class="notice">本日の店舗目標はまだ設定されていません。</p>');
+  const reached=pct!==null&&pct>=100;
+  const color=reached?'#48d8a2':'#62b2ff';
+  const remain=known?Math.max(0,goal-n):null;
+  const value=known?n+'件':'当日実績未報告';
+  const status=known?(goal===0?'目標0件':reached?'目標達成！':'残り '+remain+'件'):'実績登録待ち';
+  return '<div class="entry" style="padding:13px 0"><div class="row"><b>'+escapeHtml(title)+'</b><strong style="color:'+color+'">'+(pct===null?'—':pct+'%')+'</strong></div>'+
+  '<div class="row muted micro" style="margin-top:6px"><span>'+value+' / 目標 '+goal+'件</span><span style="color:'+color+'">'+status+'</span></div>'+
+  '<div class="bar" style="height:9px;margin-top:9px"><div style="width:'+(pct===null?0:Math.min(100,pct))+'%;height:100%;background:'+color+'"></div></div></div>';
+ }).join('')+(configured.length?'':'<p class="notice">本日の店舗目標はまだ設定されていません。</p>');
 }
 $('dailyGoalDate').value=nowDay();
 $('dailyGoalDate').onchange=drawDailyGoalEditor;
