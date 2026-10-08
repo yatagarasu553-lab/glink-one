@@ -212,5 +212,23 @@ function refreshInsights(){
 }
 function showDayInfo(day){const e=insightEntries().filter(x=>x.date===day),r=insightReports().filter(x=>x.date===day);$('selectedDay').textContent=day+'：実績登録 '+e.length+'件、対外換算 '+e.filter(x=>x.type==='対外').reduce((t,x)=>t+weightedDeals(x),0)+'件、日報 '+r.length+'件'}
 
+
+$('calendarMonth').value=nowDay().slice(0,7);
+$('calendarMonth').onchange=refreshInsights;
+$('rankMetric').onchange=refreshInsights;
+$('exportCsv').onclick=()=>{
+ const m=$('calendarMonth').value;
+ const rows=[['日付','担当者','ブランド','区分','換算件数','売上','ADC','保険'],...insightEntries().filter(x=>String(x.date).startsWith(m)).map(x=>[x.date,x.staff,x.carrier,x.type,weightedDeals(x),x.sales,x.adc,x.insurance])];
+ const csv=String.fromCharCode(65279)+rows.map(x=>x.map(y=>JSON.stringify(String(y??''))).join(',')).join('\r\n');
+ const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+ const a=document.createElement('a');a.href=u;a.download='GLINK-ONE-'+m+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);
+};
+$('printReport').onclick=()=>window.print();
+$('safeBackup').onclick=()=>{
+ if(!cloudReady||activeRole!=='admin')return alert('管理者のみ利用できます');
+ const json=JSON.stringify({exportedAt:new Date().toISOString(),team:state,records:submittedRecords},null,2);
+ const u=URL.createObjectURL(new Blob([json],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='GLINK-ONE-backup-'+nowDay()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);
+};
+
 initCloudForm();
 </script></body></html>
