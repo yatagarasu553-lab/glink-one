@@ -66,10 +66,10 @@ const origExport=$('exportBtn').onclick;
 const GLINK_ROSTER=[{id:'GLK001',name:'スタッフA',title:'管理者',role:'admin'},{id:'GLK002',name:'スタッフB',title:'スタッフ',role:'member'},{id:'GLK003',name:'スタッフC',title:'スタッフ',role:'member'},{id:'GLK004',name:'スタッフD',title:'スタッフ',role:'member'},{id:'GLK005',name:'スタッフE',title:'スタッフ',role:'member'},{id:'GLK006',name:'スタッフF',title:'副店長',role:'admin'},{id:'GLK007',name:'スタッフG',title:'店長',role:'admin'},{id:'GLK008',name:'スタッフH',title:'スタッフ',role:'member'}];
 if(state.staff.length===3&&['スタッフA','スタッフB','スタッフC'].every((x,i)=>state.staff[i]===x))state.staff=GLINK_ROSTER.map(x=>x.name);
 // Persist initial October targets; older backups remain compatible.
-persist();render();
+persist();let submittedRecords=[];let loggedStaffName=null;let cloudSession=null;render();
 
 // v3 opt-in cloud sync. The cloud document is versioned to protect against stale-device overwrites.
-const CLOUD_KEY='glink-one-v3-cloud';let submittedRecords=[];let loggedStaffName=null;let activeRole=null;let cloudCfg={},cloudSession=null,cloudRevision=null,cloudReady=false,cloudBusy=false,cloudDirty=false,cloudTimer=null,cloudLastSaved='';
+const CLOUD_KEY='glink-one-v3-cloud';let activeRole=null;let cloudCfg={},cloudRevision=null,cloudReady=false,cloudBusy=false,cloudDirty=false,cloudTimer=null,cloudLastSaved='';
 try{cloudCfg=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch{cloudCfg={}};if(!cloudCfg.url)cloudCfg.url='https://olxapervogzqmigzyedo.supabase.co';if(!cloudCfg.key)cloudCfg.key='sb_publishable_uBvIrUpYxRda-RJDXV5Daw_kCBu4z0f';if(!cloudCfg.team)cloudCfg.team='cf18497a-3cf9-4813-96f2-f4e0fb6d6489'
 function cloudStatus(msg,bad=false){$('cloudStatus').className=bad?'warn':'notice';$('cloudStatus').textContent=msg;$('cloudBadge').textContent=cloudReady?'☁ TEAM SYNC':'LOCAL DEMO';$('cloudAccount').textContent=cloudSession?.user?.email||'';updateRoleUI()}
 function cloudValid(){return /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(cloudCfg.url||'')&&!!cloudCfg.key&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cloudCfg.team||'')}
