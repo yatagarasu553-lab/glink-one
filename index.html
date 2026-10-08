@@ -70,7 +70,7 @@ persist();render();
 
 // v3 opt-in cloud sync. The cloud document is versioned to protect against stale-device overwrites.
 const CLOUD_KEY='glink-one-v3-cloud';let activeRole=null;let cloudCfg={},cloudSession=null,cloudRevision=null,cloudReady=false,cloudBusy=false,cloudDirty=false,cloudTimer=null,cloudLastSaved='';
-try{cloudCfg=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch{cloudCfg={}}
+try{cloudCfg=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch{cloudCfg={}};if(!cloudCfg.url)cloudCfg.url='https://olxapervogzqmigzyedo.supabase.co';if(!cloudCfg.key)cloudCfg.key='sb_publishable_uBvIrUpYxRda-RJDXV5Daw_kCBu4z0f';if(!cloudCfg.team)cloudCfg.team='cf18497a-3cf9-4813-96f2-f4e0fb6d6489'
 function cloudStatus(msg,bad=false){$('cloudStatus').className=bad?'warn':'notice';$('cloudStatus').textContent=msg;$('cloudBadge').textContent=cloudReady?'☁ TEAM SYNC':'LOCAL DEMO';$('cloudAccount').textContent=cloudSession?.user?.email||'';updateRoleUI()}
 function cloudValid(){return /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(cloudCfg.url||'')&&!!cloudCfg.key&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cloudCfg.team||'')}
 function cloudHeaders(extra={}){return {'apikey':cloudCfg.key,'Authorization':'Bearer '+cloudSession.access_token,'Content-Type':'application/json',...extra}}
