@@ -61,7 +61,23 @@ $('exampleBtn').onclick=()=>{$('pasteInput').value=`10/8 富谷 結果報告\nSY
 $('parseBtn').onclick=()=>{pending=parseStoreText($('pasteInput').value);const feedback=$('pasteFeedback');$('pastePreview').style.display=pending.date&&(Object.keys(pending.day).length||Object.keys(pending.cum).length)?'block':'none';feedback.innerHTML=pending.warnings.map(w=>`<div class="warn">${escapeHtml(w)}</div>`).join('')||'<div class="ok">読み取り完了。内容を確認して保存してください。</div>';
  $('parsedInfo').innerHTML=`<p><b>${escapeHtml(pending.date||'日付不明')} ${escapeHtml(pending.store||'店舗未特定')}</b> ・ 当日${Object.keys(pending.day).length}項目 / 累計${Object.keys(pending.cum).length}項目</p>`;
  const parts=[['当日',DAILY_KEYS,pending.day],['累計',TARGET_KEYS,pending.cum]];$('parsedGrid').innerHTML=parts.map(([t,arr,obj])=>`<div style="grid-column:1/-1;margin-top:12px;color:#8ac8ff"><b>${t}</b></div>`+arr.filter(([k])=>obj[k]!==undefined).map(([k,label])=>`<div>${escapeHtml(label)}</div><div style="text-align:right"><b>${k==='sales'?yen(obj[k]):obj[k]+'件'}</b></div>`).join('')).join('')};
-$('confirmPaste').onclick=()=>{if(!pending?.date)return alert('先に内容を確認してください');if(state.storeReports.some(r=>r.date===pending.date)&&!confirm('同じ日付の店舗報告があります。上書きしますか？'))return;state.storeReports=state.storeReports.filter(r=>r.date!==pending.date);state.storeReports.push({...pending,id:newId()});state.storeReports.sort((a,b)=>a.date.localeCompare(b.date));persist();$('pasteFeedback').innerHTML='<div class="ok">保存しました。ホームの項目別達成率に反映済みです。</div>';$('pastePreview').style.display='none';pending=null;render()};
+$('confirmPaste').onclick=()=>{
+ if(!pending?.date)return alert('先に内容を確認してください');
+ if(!Object.keys(pending.day||{}).length&&!Object.keys(pending.cum||{}).length)return alert('保存する数値がありません');
+ const last=state.storeReports.find(r=>r.date===pending.date);
+ const currentSnap=reportForMonth(pending.date.slice(0,7)).filter(r=>r.date<=pending.date&&Object.keys(r.cum||{}).length).slice(-1)[0];
+ const cumKeys=Object.keys(pending.cum||{});
+ if(cumKeys.length&&currentSnap&&currentSnap.date!==pending.date){
+  const decreases=cumKeys.filter(k=>currentSnap.cum[k]!==undefined&&pending.cum[k]<currentSnap.cum[k]);
+  if(decreases.length&&!confirm('累計値が前回の保存値より少ない項目があります：'+decreases.join('・')+'。訂正として保存しますか？'))return;
+ }
+ if(last&&!confirm('同じ日付の店舗報告があります。今回読み取った項目のみ更新し、未入力項目は保持しますか？'))return;
+ const merged={...(last||{}),...pending,id:last?.id||newId(),day:{...(last?.day||{}),...(pending.day||{})},cum:{...(last?.cum||{}),...(pending.cum||{})}};
+ state.storeReports=state.storeReports.filter(r=>r.date!==pending.date);
+ state.storeReports.push(merged);state.storeReports.sort((a,b)=>a.date.localeCompare(b.date));
+ persist();$('pasteFeedback').innerHTML='<div class="ok">保存しました。当日の達成率と月間累計を更新しました。TEAM SYNCで同期状況をご確認ください。</div>';
+ $('pastePreview').style.display='none';pending=null;render();
+};
 $('saveAllTargets').onclick=()=>{const m=nowDay().slice(0,7),v={};for(const [k] of TARGET_KEYS){const raw=$('tg_'+k).value.trim();if(raw===''){v[k]=null;continue}const n=Number(raw);if(!Number.isSafeInteger(n)||n<0)return alert('目標値を確認してください');v[k]=n}state.targets[m]=v;persist();render();alert('全項目の目標を保存しました')};
 const origExport=$('exportBtn').onclick;
 // Team roster v4: preserve previously entered custom members and data.
