@@ -335,5 +335,21 @@ async function restoreStoreBackup(i){
 }
 $('refreshBackups').onclick=listStoreBackups;
 
+
+function setupMobileCounters(){
+ for(const id of ['catchDeals','closeDeals','adc','insurance','catchCount','stopCount','inviteCount','talkCount']){
+  const field=$(id);if(!field||field.dataset.counterReady)return;
+  field.dataset.counterReady='1';field.inputMode='numeric';
+  const wrapper=document.createElement('div');wrapper.className='row';wrapper.style.gap='8px';
+  field.parentNode.insertBefore(wrapper,field);wrapper.appendChild(field);field.style.minWidth='0';
+  for(const delta of [-1,1]){
+   const b=document.createElement('button');b.type='button';b.className='tinybtn';b.textContent=delta<0?'−':'＋';b.style.fontSize='21px';b.style.minWidth='46px';b.style.padding='10px';
+   b.onclick=()=>{const current=Number(field.value)||0;const max=Number(field.max)||100000;field.value=Math.min(max,Math.max(0,current+delta));field.dispatchEvent(new Event('input',{bubbles:true}));field.dispatchEvent(new Event('change',{bubbles:true}))};
+   if(delta<0)wrapper.insertBefore(b,field);else wrapper.appendChild(b);
+  }
+ }
+}
+setupMobileCounters();
+
 initCloudForm();drawDailyGoalEditor();renderDailyGoals();
 </script></body></html>
