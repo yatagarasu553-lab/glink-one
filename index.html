@@ -158,7 +158,8 @@ async function drawApprovalsAndAudit(){
   const requests=await authorized(()=>cloudFetch('/rest/v1/staff_access_requests?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&status=eq.pending&select=id,staff_name,created_at&order=created_at.asc'));
   $('pendingApprovals').innerHTML='<div class="sectiontitle">登録承認（管理者のみ）</div>'+(requests.length?requests.map(x=>'<div class="entry row"><span>'+escapeHtml(x.staff_name)+' / '+escapeHtml(x.created_at.slice(0,10))+'</span><button class="tinybtn" onclick="approveStaff(\''+x.id+'\')">承認</button></div>').join(''):'<p class="muted micro">承認待ちはありません</p>');
  }
- const logs=await authorized(()=>cloudFetch('/rest/v1/staff_submission_audit?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=action,kind,changed_at,before_payload,after_payload&order=changed_at.desc&limit=30'));
+ const actors=await authorized(()=>cloudFetch('/rest/v1/team_members?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=user_id,staff_name'));const actorNames=Object.fromEntries(actors.map(a=>[a.user_id,a.staff_name]));
+ const logs=await authorized(()=>cloudFetch('/rest/v1/staff_submission_audit?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=action,kind,actor_id,changed_at,before_payload,after_payload&order=changed_at.desc&limit=30'));
  $('auditHistory').innerHTML='<div class="sectiontitle">入力・変更履歴（直近30件）</div>'+(logs.length?logs.map(x=>{const d=x.after_payload||x.before_payload||{};return '<div class="entry micro">'+escapeHtml(x.changed_at.slice(0,16).replace('T',' '))+' UTC / '+escapeHtml(d.staff||'社員')+' / '+escapeHtml(x.kind==='deal'?'実績':'日報')+' / '+escapeHtml(x.action==='created'?'登録':x.action==='updated'?'修正':'削除')+(x.action==='updated'&&x.kind==='deal'?' / '+escapeHtml(String(x.before_payload?.deals??'—'))+'→'+escapeHtml(String(x.after_payload?.deals??'—'))+'件':'')+'</div>'}).join(''):'<p class="muted micro">履歴はまだありません</p>');
 }
 async function approveStaff(id){
