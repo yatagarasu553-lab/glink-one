@@ -48,6 +48,7 @@ function effectiveMonth(m){const rows=reportForMonth(m), snap=[...rows].reverse(
 function renderPasteExtras(){const m=nowDay().slice(0,7), goals=state.targets[m]||{},eff=effectiveMonth(m);$('goalSummary').innerHTML=TARGET_KEYS.map(([k,title])=>{const g=goals[k],n=eff.sums[k],known=n!==undefined;return `<div class="goalrow"><div>${escapeHtml(title)}<div class="muted micro">${known?(k==='sales'?yen(n):n+'件'):'未入力'} / ${g===null||g===undefined?'目標未設定':k==='sales'?yen(g):g+'件'}</div></div><b>${known&&g?pctLabel(n,g):'—'}</b><div class="bar"><div style="width:${known&&g?Math.min(100,n/g*100):0}%"></div></div></div>`}).join('')+(eff.snap?`<p class="notice">${escapeHtml(eff.snap.date)} の累計報告を基準に表示。後日の当日分は自動加算しません（重複防止）。</p>`:'<p class="notice">累計報告がない項目は、貼り付けた当日値から算出できるもののみ表示します。</p>');
  const current=state.storeReports.find(r=>r.date===nowDay()), currentDay=current?.day||{};
  if(eff.rows.length){$('totalDeals').textContent=eff.sums.external===undefined?'—':eff.sums.external+'件';$('dealSub').textContent=`SB対外 ${eff.sums.sb??'—'} / YM対外 ${eff.sums.ym??'—'}（店舗報告）`;$('totalSales').textContent=eff.sums.sales===undefined?'—':yen(eff.sums.sales);$('adcMetric').textContent=eff.sums.adc===undefined?'—':eff.sums.adc+'件';$('insuranceMetric').textContent=eff.sums.insurance===undefined?'—':eff.sums.insurance+'件';$('goalPct').textContent=eff.sums.external!==undefined?pctLabel(eff.sums.external,goals.external):'—';$('goalBar').style.width=eff.sums.external!==undefined&&goals.external?Math.min(100,eff.sums.external/goals.external*100)+'%':'0%';$('goalCount').textContent=`${eff.sums.external??'—'} / ${goals.external??'—'}件`;$('remaining').textContent=eff.sums.external!==undefined&&goals.external!=null?'残り '+Math.max(0,goals.external-eff.sums.external)+'件':'未集計';$('todayDeals').textContent=currentDay.sy===undefined?'—':currentDay.sy+'件';$('todaySales').textContent=currentDay.sales===undefined?'未入力':yen(currentDay.sales);$('sbTotal').textContent=eff.sums.sb===undefined?'—':eff.sums.sb+'件';$('ymTotal').textContent=eff.sums.ym===undefined?'—':eff.sums.ym+'件';}
+ renderDailyGoals();
  $('adcGoalText').textContent='目標 '+(goals.adc??'—')+'件';$('insuranceGoalText').textContent='目標 '+(goals.insurance??'—')+'件';
  $('allTargetFields').innerHTML=TARGET_KEYS.map(([k,title])=>`<label for="tg_${k}">${escapeHtml(title)}</label><input id="tg_${k}" type="number" min="0" step="1" placeholder="未設定" value="${goals[k]??''}">`).join('');
  $('pasteHistory').innerHTML=state.storeReports.length?[...state.storeReports].reverse().map(r=>`<div class="entry"><div class="row"><b>${escapeHtml(r.date)} ${escapeHtml(r.store||'')} </b><button class="tinybtn" data-remove-paste="${escapeHtml(r.date)}">削除</button></div><div class="muted micro">当日 ${Object.keys(r.day).length}項目 / 累計 ${Object.keys(r.cum).length}項目</div></div>`).join(''):'<p class="muted micro">保存された店舗報告はありません。</p>';
@@ -231,5 +232,47 @@ $('safeBackup').onclick=()=>{
  const u=URL.createObjectURL(new Blob([json],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='GLINK-ONE-backup-'+nowDay()+'.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);
 };
 
-initCloudForm();
+
+function drawDailyGoalEditor(){
+ const date=$('dailyGoalDate').value||nowDay(),current=state.dailyTargets?.[date]||{};
+ $('dailyGoalFields').innerHTML=TARGET_KEYS.map(([k,title])=>'<label for="dg_'+k+'">'+escapeHtml(title)+'</label><input id="dg_'+k+'" type="number" min="0" step="1" placeholder="未設定" value="'+(current[k]??'')+'">').join('');
+}
+function dailyStoreActual(date){
+ const row=state.storeReports.find(x=>x.date===date),day=row?.day||{}, result={};
+ const pairs={sales:'sales',device:'device',ys:'ys',insurance:'insurance',adc:'adc',fixed:'fixed',electric:'electric',shs:'shs',paytoku:'paytoku',air:'air',external:'external',sb:'sb',ym:'ym'};
+ for(const [key,source] of Object.entries(pairs))if(day[source]!==undefined)result[key]=day[source];
+ const sbKeys=['shsMnp','shsNew','simMnp','simNew'];
+ if(result.sb===undefined&&sbKeys.every(k=>day[k]!==undefined))result.sb=sbKeys.reduce((t,k)=>t+day[k],0);
+ if(result.ym===undefined&&day.yMnp!==undefined&&day.yNew!==undefined)result.ym=day.yMnp+day.yNew;
+ if(result.external===undefined&&result.sb!==undefined&&result.ym!==undefined)result.external=result.sb+result.ym;
+ if(result.external===undefined&&day.sy!==undefined)result.external=day.sy;
+ return result;
+}
+function renderDailyGoals(){
+ const date=nowDay(),goals=state.dailyTargets?.[date]||{},actual=dailyStoreActual(date);
+ $('dailyGoalView').innerHTML='<p class="muted micro">'+escapeHtml(date)+' ・ 店舗の当日報告に基づく達成率（個人実績との二重集計なし）</p>'+TARGET_KEYS.map(([k,title])=>{
+  const goal=goals[k],n=actual[k],known=n!==undefined,validGoal=goal!==undefined&&goal!==null;
+  if(!validGoal)return '';
+  const pct=known&&goal>0?Math.round(n/goal*100):null;
+  return '<div class="goalrow"><div>'+escapeHtml(title)+'<div class="muted micro">'+(known?(k==='sales'?yen(n):n+'件'):'当日実績未報告')+' / '+(k==='sales'?yen(goal):goal+'件')+'</div></div><b>'+(pct===null?'—':pct+'%')+'</b><div class="bar"><div style="width:'+(pct===null?0:Math.min(100,pct))+'%"></div></div></div>';
+ }).join('')+(Object.values(goals).some(x=>x!==null&&x!==undefined)?'':'<p class="notice">本日の店舗目標はまだ設定されていません。</p>');
+}
+$('dailyGoalDate').value=nowDay();
+$('dailyGoalDate').onchange=drawDailyGoalEditor;
+$('saveDailyGoals').onclick=()=>{
+ if(cloudSession&&activeRole!=='admin')return alert('管理者専用の操作です');
+ const date=$('dailyGoalDate').value;if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(date))return alert('対象日を選択してください');
+ const goals={};
+ for(const [k] of TARGET_KEYS){
+  const raw=$('dg_'+k).value.trim();
+  if(raw===''){goals[k]=null;continue}
+  const value=Number(raw);
+  if(!/^[0-9]+$/.test(raw)||!Number.isSafeInteger(value))return alert('目標は0以上の整数で入力してください');
+  goals[k]=value;
+ }
+ if(!state.dailyTargets)state.dailyTargets={};
+ state.dailyTargets[date]=goals;persist();render();drawDailyGoalEditor();alert(date+' の店舗目標を保存しました。共有同期状態を確認してください');
+};
+
+initCloudForm();drawDailyGoalEditor();renderDailyGoals();
 </script></body></html>
