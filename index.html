@@ -897,8 +897,8 @@ async function createActivityAi(force=false){
 }
 $('imgAiGenerate').onclick=()=>{$('imgDate').value=nowDay();initImageMaker();createActivityAi(false)};
 $('imgAiReroll').onclick=()=>createActivityAi(true);
-$('imgDate').addEventListener('change',()=>{activityAiImage=null;drawReportImage()});
-$('imgStaff').addEventListener('change',()=>{activityAiImage=null;drawReportImage()});
+$('imgDate').addEventListener('change',()=>{activityAiImage=null;activityAiDesign=null;drawReportImage()});
+$('imgStaff').addEventListener('change',()=>{activityAiImage=null;activityAiDesign=null;drawReportImage()});
 const navBeforeImage=navigate;navigate=function(page){navBeforeImage(page);if(page==='reportImage')initImageMaker()};
 const renderBeforeGap=render;render=function(){try{renderBeforeGap()}finally{try{renderGap()}catch(e){console.error('GLINK GAP',e)}}};
 </script></body></html>
