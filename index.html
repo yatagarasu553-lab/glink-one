@@ -765,32 +765,49 @@ function imgLoadData(){
 function drawReportImage(){
  const cv=$('imgCanvas'),c=cv.getContext('2d');if(!c)return;
  const n=imageNumbers(),date=$('imgDate').value||nowDay(),staff=$('imgStaff').value||loggedStaffName||'スタッフ';
- const cols=['#f43462','#107ce8','#16a46d','#f29716','#7646cb','#00a3b2'];
- const bg=c.createLinearGradient(0,0,1080,1350);bg.addColorStop(0,'#139af3');bg.addColorStop(.5,'#eef8ff');bg.addColorStop(1,'#126ee6');c.fillStyle=bg;c.fillRect(0,0,1080,1350);
- if(activityAiImage?.complete&&activityAiImage.naturalWidth){c.drawImage(activityAiImage,0,0,1080,1350);c.fillStyle='#ffffff55';c.fillRect(0,0,1080,1350)}
- c.fillStyle='#072556';c.beginPath();c.roundRect(22,25,1036,224,30);c.fill();
- c.fillStyle='#fff';c.font='bold 76px sans-serif';c.fillText('活動報告',55,123);c.font='bold 30px sans-serif';c.fillText('GLINK ONE   /   DAILY SALES REPORT',60,173);
- c.fillStyle='#fff';c.beginPath();c.roundRect(710,61,325,145,20);c.fill();c.fillStyle='#123e75';c.font='bold 46px sans-serif';c.fillText(date.slice(5).replace('-',' / '),734,120);c.font='bold 25px sans-serif';c.fillText((state.settings?.store||'富谷店')+'  '+staff,733,164);
- const rate=(x,y)=>y>0?Math.round(x/y*100)+'%':'0%';
- function card(x,y,w,h,color,title,value,sub=''){
-  c.fillStyle='#ffffff';c.beginPath();c.roundRect(x,y,w,h,18);c.fill();
-  c.strokeStyle=color;c.lineWidth=5;c.stroke();c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,52,[16,16,0,0]);c.fill();
-  c.fillStyle='#fff';c.font='bold 27px sans-serif';c.fillText(title,x+17,y+36);
-  c.fillStyle='#121925';c.font='bold '+(String(value).length>8?37:57)+'px sans-serif';c.fillText(value,x+19,y+121);
-  if(sub){c.fillStyle=color;c.font='bold 22px sans-serif';c.fillText(sub,x+18,y+h-18)}
+ const colors=['#f22f65','#147bdc','#08a779','#f19813','#8249cb','#08a2ac'];
+ const w=1080,h=1350;
+ const background=c.createLinearGradient(0,0,w,h);background.addColorStop(0,'#0a5aba');background.addColorStop(.42,'#57bdff');background.addColorStop(1,'#064bb8');c.fillStyle=background;c.fillRect(0,0,w,h);
+ if(activityAiImage?.complete&&activityAiImage.naturalWidth){
+  const im=activityAiImage,scale=Math.max(w/im.naturalWidth,h/im.naturalHeight),sw=im.naturalWidth*scale,sh=im.naturalHeight*scale;
+  c.drawImage(im,(w-sw)/2,(h-sh)/2,sw,sh);
  }
- card(24,270,325,180,cols[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ');
- card(376,270,325,180,cols[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount));
- card(728,270,325,180,cols[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount));
- card(24,475,325,170,cols[3],'商談数',n.talkCount+'組');
- card(376,475,325,170,cols[0],'成約数',n.won+'組');
- card(728,475,325,170,cols[4],'成約率',rate(n.won,n.talkCount));
- c.fillStyle='#11244d';c.beginPath();c.roundRect(24,676,1030,47,14);c.fill();c.fillStyle='#fff';c.font='bold 28px sans-serif';c.fillText('個別実績・付帯',44,711);
- const small=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
- for(let i=0;i<small.length;i++){let x=24+(i%3)*352,y=742+Math.floor(i/3)*121;c.fillStyle='#fff';c.beginPath();c.roundRect(x,y,325,105,17);c.fill();c.fillStyle=cols[i%cols.length];c.beginPath();c.roundRect(x,y,325,37,[17,17,0,0]);c.fill();c.fillStyle='#fff';c.font='bold 22px sans-serif';c.fillText(small[i][0],x+16,y+27);c.fillStyle='#141c2d';c.font='bold 42px sans-serif';c.fillText(small[i][1]+'件',x+17,y+82)}
- c.fillStyle='#113b72';c.beginPath();c.roundRect(24,997,1030,54,13);c.fill();c.fillStyle='#fff';c.font='bold 27px sans-serif';c.fillText('今日の振り返り',48,1034);
- c.fillStyle='#fff';c.beginPath();c.roundRect(24,1065,1030,192,20);c.fill();c.fillStyle='#182845';c.font='29px sans-serif';const memo=$('imgComment').value||'今日も全力で取り組みます！';let line='',yy=1112;for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>945){c.fillText(line,47,yy);yy+=39;line=''}if(ch!=='\n')line+=ch;if(yy>1205)break}if(yy<=1230)c.fillText(line,47,yy);
- c.fillStyle='#fff';c.font='bold 25px sans-serif';c.fillText('今日も全力でいこう!!',665,1313);
+ // Brush accents complement the illustration rather than covering the protagonist.
+ c.save();c.translate(-10,24);c.rotate(-.05);c.fillStyle='#071c48e8';c.beginPath();c.roundRect(10,0,690,192,25);c.fill();c.restore();
+ c.fillStyle='#fff';c.font='900 79px sans-serif';c.fillText('活動報告',28,110);
+ c.font='bold 23px sans-serif';c.fillText('GLINK ONE  /  DAILY SALES REPORT',38,154);
+ c.fillStyle='#fff';c.beginPath();c.roundRect(730,32,324,159,20);c.fill();c.fillStyle='#123766';c.font='bold 50px sans-serif';c.fillText(date.slice(5).replace('-',' / '),752,96);
+ c.font='bold 26px sans-serif';c.fillText((state.settings?.store||'富谷店')+'  '+staff,749,152);
+ const rate=(x,y)=>y>0?Math.round(x/y*100)+'%':'0%';
+ const panel=(x,y,width,height,tone,title,value,sub)=>{
+  c.save();c.shadowColor='#00154055';c.shadowBlur=15;c.shadowOffsetY=6;c.fillStyle='#fff';c.beginPath();c.roundRect(x,y,width,height,15);c.fill();c.restore();
+  c.lineWidth=4;c.strokeStyle=tone;c.beginPath();c.roundRect(x,y,width,height,15);c.stroke();
+  c.fillStyle=tone;c.beginPath();c.roundRect(x,y,width,43,[13,13,0,0]);c.fill();
+  c.fillStyle='#fff';c.font='bold 23px sans-serif';c.fillText(title,x+12,y+29);
+  c.fillStyle='#121b2c';c.font='900 '+(String(value).length>6?32:48)+'px sans-serif';c.fillText(value,x+13,y+99);
+  if(sub){c.fillStyle=tone;c.font='bold 18px sans-serif';c.fillText(sub,x+12,y+height-11)}
+ };
+ // Two compact, unequal left-side columns leave a large uninterrupted full-height character on the right.
+ panel(22,218,250,163,colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ');
+ panel(291,218,250,163,colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount));
+ panel(22,398,250,163,colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount));
+ panel(291,398,250,163,colors[3],'商談数',n.talkCount+'組','');
+ panel(22,578,250,163,colors[0],'成約数',n.won+'組','');
+ panel(291,578,250,163,colors[4],'成約率',rate(n.won,n.talkCount),'');
+ // Short motivational paint mark on the lower right, legible over any generated imagery.
+ c.save();c.translate(746,685);c.rotate(-.13);c.fillStyle='#ffe82a';c.beginPath();c.roundRect(-7,-44,305,90,16);c.fill();c.fillStyle='#122447';c.font='900 30px sans-serif';c.fillText('今日も全力で!!',5,13);c.restore();
+ // KPI row sits in the foreground at the bottom of the character artwork.
+ c.fillStyle='#082353eb';c.beginPath();c.roundRect(20,766,1040,55,16);c.fill();
+ c.fillStyle='#fff';c.font='bold 28px sans-serif';c.fillText('個別実績  /  付帯獲得',42,803);
+ const mini=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
+ for(let i=0;i<mini.length;i++){const x=22+(i%3)*355,y=839+Math.floor(i/3)*99,clr=colors[i];
+  c.fillStyle='#ffffffed';c.beginPath();c.roundRect(x,y,333,87,15);c.fill();c.fillStyle=clr;c.beginPath();c.roundRect(x,y,333,33,[15,15,0,0]);c.fill();c.fillStyle='#fff';c.font='bold 21px sans-serif';c.fillText(mini[i][0],x+14,y+24);c.fillStyle='#101b2d';c.font='900 38px sans-serif';c.fillText(mini[i][1]+'件',x+14,y+72);
+ }
+ c.fillStyle='#0a2e68ed';c.beginPath();c.roundRect(22,1052,1036,51,14);c.fill();c.fillStyle='#fff';c.font='bold 27px sans-serif';c.fillText('✎  今日の振り返り',45,1086);
+ c.fillStyle='#fffffff2';c.beginPath();c.roundRect(22,1116,1036,171,18);c.fill();
+ c.fillStyle='#112343';c.font='28px sans-serif';const memo=$('imgComment').value||'今日も全力で取り組みます！';let line='',yy=1162;
+ for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>953){if(line)c.fillText(line,46,yy);yy+=37;line=''}if(ch!=='\n')line+=ch;if(yy>1261)break}if(yy<=1261&&line)c.fillText(line,46,yy);
+ c.fillStyle='#fff';c.font='bold 23px sans-serif';c.fillText('GLINK ONE  •  LINE WORKS 提出用',30,1325);
 }
 function initImageMaker(){
  const staff=$('imgStaff'),old=staff.value;staff.innerHTML=state.staff.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');if(state.staff.includes(old))staff.value=old;else if(loggedStaffName)staff.value=loggedStaffName;
