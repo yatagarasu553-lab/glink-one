@@ -780,11 +780,27 @@ function reportPalette(){
 function drawReportImage(){
  const cv=$('imgCanvas'),c=cv.getContext('2d');if(!c)return;
  const n=imageNumbers(),date=$('imgDate').value||nowDay(),staff=$('imgStaff').value||loggedStaffName||'スタッフ',hasArt=!!(activityAiImage?.complete&&activityAiImage?.naturalWidth);
- const palette=reportPalette(),colors=palette.accents,W=1080,H=1350;
+ const palette=reportPalette(),colors=palette.accents,W=1080;
+ // Size the full report to the reflection content before drawing: never silently truncate user notes.
+ const memo=$('imgComment').value||'本日の振り返りを入力してください。';
+ const memoWidths=[744,840,940,1030];let memoSpec=null;
+ for(const mw of memoWidths){
+  for(const fontSize of [26,24,22,20]){
+   c.font=fontSize+'px sans-serif';let lines=[],line='';
+   for(const ch of memo){if(ch==='\\n'){lines.push(line);line='';continue}if(line&&c.measureText(line+ch).width>mw-42){lines.push(line);line=''}line+=ch}
+   lines.push(line);
+   const height=Math.max(78,25+lines.length*(fontSize+10));
+   if(height<=220||mw===1030&&fontSize===20){memoSpec={width:mw,height,lines,fontSize};break}
+  }
+  if(memoSpec)break;
+ }
+ const H=Math.max(1350,1164+memoSpec.height+90);
+ if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
+
  const families={pop:['#ed3268','#1676e8','#08a889','#ed9417','#7947d2','#00a1b4'],futuristic:['#116fe0','#4f4bd1','#08aac2','#785bd5','#0ca5d5','#325aa3'],luxury:['#967120','#ab853e','#80604f','#b59554','#725b6e','#5c707a'],bright:['#e82e6a','#1683e3','#0cab7b','#ee9b12','#744cce','#0b9eb8']};
  if(activityAiDesign&&families[activityAiDesign.style]){families[activityAiDesign.style].forEach((v,i)=>colors[i]=v);if(/^#[0-9a-fA-F]{6}$/.test(activityAiDesign.accent||''))colors[0]=activityAiDesign.accent;}
- const bg=c.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#29a9ff');bg.addColorStop(1,'#0b58c1');c.fillStyle=bg;c.fillRect(0,0,W,H);
- if(hasArt){const im=activityAiImage,scale=Math.max(W/im.naturalWidth,H/im.naturalHeight);c.drawImage(im,(W-im.naturalWidth*scale)/2,(H-im.naturalHeight*scale)/2,im.naturalWidth*scale,im.naturalHeight*scale)}
+ const bg=c.createLinearGradient(0,0,W,1350);bg.addColorStop(0,'#29a9ff');bg.addColorStop(1,'#0b58c1');c.fillStyle=bg;c.fillRect(0,0,W,H);
+ if(hasArt){const im=activityAiImage,scale=Math.max(W/im.naturalWidth,1350/im.naturalHeight);c.drawImage(im,(W-im.naturalWidth*scale)/2,(1350-im.naturalHeight*scale)/2,im.naturalWidth*scale,im.naturalHeight*scale)}
  const rate=(a,b)=>b>0?Math.round(a/b*100)+'%':'0%';
  const brush=(x,y,w,h,color,rot=0)=>{c.save();c.translate(x+w/2,y+h/2);c.rotate(rot);c.fillStyle=color;c.beginPath();c.moveTo(-w/2+14,-h/2);c.lineTo(w/2-18,-h/2+4);c.lineTo(w/2,h/2-14);c.lineTo(-w/2,h/2);c.closePath();c.fill();for(let k=0;k<5;k++){c.fillRect(-w/2+8+k*14,h/2-3,(w-k*23)*.32,3)}c.restore()};
  const text=(str,x,y,max)=>{c.fillText(str,x,y,max)};
@@ -888,25 +904,17 @@ function drawReportImage(){
  });
  // Unified lower canvas panel hides occasional bright artifacts from AI backgrounds
  // without adding white blocks; applies before all reflection text.
- const footerShade=c.createLinearGradient(0,1085,0,1350);
+ const footerShade=c.createLinearGradient(0,1085,0,H);
  footerShade.addColorStop(0,'rgba(4,24,59,0)');
  footerShade.addColorStop(.25,'rgba(4,24,59,.45)');
  footerShade.addColorStop(1,'rgba(4,24,59,.88)');
- c.fillStyle=footerShade;c.fillRect(0,1085,W,265);
+ c.fillStyle=footerShade;c.fillRect(0,1085,W,H-1085);
  brush(15,1102,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1146);
- const memo=$('imgComment').value||'本日の振り返りを入力してください。';
- c.font='26px sans-serif';
- const memoLines=[];let line='';
- for(const ch of memo){if(ch==='\n'){memoLines.push(line);line='';continue}
-  if(c.measureText(line+ch).width>690&&line){memoLines.push(line);line=''}
-  line+=ch;
- }
- if(line||!memoLines.length)memoLines.push(line);
- const memoVisible=memoLines.slice(0,3),memoHeight=Math.max(78,24+memoVisible.length*36);
- rect(20,1164,744,memoHeight,16,'#fffffff2');
- c.fillStyle='#152b4e';c.font='26px sans-serif';
- memoVisible.forEach((entry,i)=>text(i===2&&memoLines.length>3?entry.slice(0,-1)+'…':entry,39,1203+i*36,690));
- brush(22,1305,463,39,'#063365ca');c.fillStyle='#fff';c.font='bold 21px sans-serif';text('GLINK ONE  /  LINE WORKS 提出用',40,1332);
+ // Width and height follow the actual measured lines; background extends to fit every line.
+ rect(20,1164,memoSpec.width,memoSpec.height,16,'#fffffff2');
+ c.fillStyle='#152b4e';c.font=memoSpec.fontSize+'px sans-serif';
+ memoSpec.lines.forEach((entry,i)=>text(entry,39,1203+i*(memoSpec.fontSize+10),memoSpec.width-42));
+ brush(22,H-45,463,39,'#063365ca');c.fillStyle='#fff';c.font='bold 21px sans-serif';text('GLINK ONE  /  LINE WORKS 提出用',40,H-18);
 }
 function initImageMaker(){
  const staff=$('imgStaff'),old=staff.value;staff.innerHTML=state.staff.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');if(state.staff.includes(old))staff.value=old;else if(loggedStaffName)staff.value=loggedStaffName;
