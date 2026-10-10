@@ -850,8 +850,12 @@ function drawReportImage(){
    return candidates[0].cards;
   }catch(e){console.warn('GLINK image composition fallback',e);return arrangements[posterMode]}
  }
- chooseImageAwareTiles().forEach((p,i)=>card(...p,...tiles[i]));
- brush(693,704,354,105,'#ffe323',-.14);c.save();c.translate(722,755);c.rotate(-.14);c.fillStyle='#0c2451';c.font='900 33px sans-serif';text('今日も全力で!!',0,0,295);c.restore();
+ // Reserve the character area on the right: keep KPI cards at x <= 505.
+ chooseImageAwareTiles().forEach((p,i)=>{
+  const [x,y,w,h]=p,scale=Math.min(1,(505-20)/(x+w-20));
+  const nx=20+(x-20)*scale,nw=w*scale;
+  card(nx,y,nw,h,...tiles[i]);
+ });
  brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
  const items=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
  items.forEach(([label,num],i)=>{
@@ -863,9 +867,16 @@ function drawReportImage(){
   c.fillStyle='#fff';c.font='bold 21px sans-serif';text(label,x+12,y+(posterMode===2?22:26),width-19);
   c.fillStyle='#091c3b';c.font='900 '+(posterMode===2?31:42)+'px sans-serif';text(num+'件',x+15,y+(posterMode===2?57:81),width-25);
  });
+ // Unified lower canvas panel hides occasional bright artifacts from AI backgrounds
+ // without adding white blocks; applies before all reflection text.
+ const footerShade=c.createLinearGradient(0,1085,0,1350);
+ footerShade.addColorStop(0,'rgba(4,24,59,0)');
+ footerShade.addColorStop(.25,'rgba(4,24,59,.45)');
+ footerShade.addColorStop(1,'rgba(4,24,59,.88)');
+ c.fillStyle=footerShade;c.fillRect(0,1085,W,265);
  brush(15,1102,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1146);
  rect(20,1164,744,Math.min(127,Math.max(85,70+Math.ceil(($('imgComment').value||'').length/29)*25)),16,'#fffffff2');c.fillStyle='#152b4e';c.font='27px sans-serif';
- const memo=$('imgComment').value||'今日も全力で取り組みます！';let line='',y=1204;for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>697){if(line)text(line,39,y,699);line='';y+=35}if(ch!=='\n')line+=ch;if(y>1276)break}if(line&&y<=1276)text(line,39,y,699);
+ const memo=$('imgComment').value||'本日の振り返りを入力してください。';let line='',y=1204;for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>697){if(line)text(line,39,y,699);line='';y+=35}if(ch!=='\n')line+=ch;if(y>1276)break}if(line&&y<=1276)text(line,39,y,699);
  brush(22,1305,463,39,'#063365ca');c.fillStyle='#fff';c.font='bold 21px sans-serif';text('GLINK ONE  /  LINE WORKS 提出用',40,1332);
 }
 function initImageMaker(){
