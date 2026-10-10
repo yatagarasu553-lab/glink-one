@@ -882,7 +882,7 @@ async function createActivityAi(force=false){
     const res=await fetch(url,{method:'POST',headers:cloudHeaders(),body:JSON.stringify({team_id:cloudCfg.team,staff:person,date,variant:activityAiVersion,request})});
     const data=await res.json();
     if(!res.ok||!data.image)throw Error(data.error||'AI生成に失敗しました');
-    src=data.image;
+    src={image:data.image,design:data.design||null};
    });
    activityAiCache.set(cacheKey,src);
   }
