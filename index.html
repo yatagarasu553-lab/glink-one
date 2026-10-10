@@ -502,7 +502,12 @@ function combinedDayActual(date){
   if(e.type==='YS')target.ys+=n;
   target.adc+=Number(e.adc)||0;target.insurance+=Number(e.insurance)||0;
  }
- for(const k of Object.keys(inc)){if(out[k]!==undefined)out[k]+=extra[k];else if(records.length)out[k]=inc[k]+extra[k]}
+ // The store report may already contain normal individual records. Use the larger
+ // confirmed count instead of adding them twice. Outsourced/extra cases always add.
+ for(const k of Object.keys(inc)){
+  if(out[k]!==undefined)out[k]=Math.max(out[k],inc[k])+extra[k];
+  else if(records.length)out[k]=inc[k]+extra[k];
+ }
  return out;
 }
 function dailyStoreActual(date){
