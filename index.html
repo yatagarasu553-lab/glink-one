@@ -799,7 +799,7 @@ function drawReportImage(){
   brush(x-1,y,w+2,50,color,emphasis?-.03:.018);
   c.fillStyle='#fff';c.font='900 '+(emphasis?28:25)+'px sans-serif';text(label,x+14,y+34,w-28);
   c.fillStyle='#081d3c';c.font='900 '+(emphasis?64:57)+'px sans-serif';text(value,x+16,y+114,w-26);
-  if(detail){rect(x+12,y+h-42,w-24,31,14,color+'26');c.fillStyle=color;c.font='bold 20px sans-serif';text(detail,x+21,y+h-19,w-36)}
+  if(detail){rect(x+12,y+h-42,w-24,31,14,'#e6f3ff');c.fillStyle=color;c.font='bold 20px sans-serif';text(detail,x+21,y+h-19,w-36)}
  }
  // 6 asymmetrical hero metrics. Left 55% reserved for stats; right-side character stays visible.
  card(20,227,258,166,colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ',true);
