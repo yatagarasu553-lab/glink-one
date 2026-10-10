@@ -334,11 +334,16 @@ function refreshInsights(){
  const k=$('rankMetric').value;const list=state.staff.map(name=>({name,n:entries.filter(x=>x.staff===name&&x.type==='対外').reduce((t,e)=>t+(k==='deals'?(e.type==='対外'?weightedDeals(e):0):Number(e[k]||0)),0)})).sort((a,b)=>b.n-a.n);
  $('metricRanks').innerHTML=list.map((x,i)=>'<div class="rank"><b>'+ (i+1)+'</b><span>'+escapeHtml(x.name)+'</span><strong>'+(k==='sales'?yen(x.n):x.n+'件')+'</strong></div>').join('');
  const daily={};entries.filter(e=>!e.legacyMonthly).forEach(e=>daily[e.date]=(daily[e.date]||0)+(e.type==='対外'?weightedDeals(e):0));const pairs=Object.entries(daily).sort((a,b)=>a[0].localeCompare(b[0])),peak=Math.max(1,...pairs.map(p=>p[1]));$('dailyTrend').innerHTML=pairs.length?pairs.map(([date,n])=>'<div class="row micro" style="margin:9px 0"><span>'+escapeHtml(date.slice(-5))+'</span><div class="bar" style="width:62%"><div style="width:'+Math.max(1,n/peak*100)+'%"></div></div><b>'+n+'件</b></div>').join(''):'<p class="muted micro">個人登録の対外実績はまだありません</p>';
- const first=new Date(+m.slice(0,4),+m.slice(5,7)-1,1).getDay();let html='<span></span>'.repeat(first);for(let d=1;d<=last;d++){const day=m+'-'+String(d).padStart(2,'0'),n=entries.filter(e=>e.date===day&&!e.legacyMonthly).length;html+='<button class="tinybtn" style="padding:9px 2px" onclick="showDayInfo(\''+day+'\')">'+d+(n?' •':'')+'</button>'}$('calendarDays').innerHTML=html;
+ const first=new Date(+m.slice(0,4),+m.slice(5,7)-1,1).getDay();let html='<span></span>'.repeat(first);for(let d=1;d<=last;d++){const day=m+'-'+String(d).padStart(2,'0'),n=entries.filter(e=>e.date===day&&!e.legacyMonthly).length,hasStore=state.storeReports.some(r=>r.date===day);html+='<button class="tinybtn" style="padding:9px 2px" onclick="showDayInfo(\''+day+'\')">'+d+(n||hasStore?' •':'')+'</button>'}$('calendarDays').innerHTML=html;
  $('monthSummary').innerHTML='<div class="entry">対象：'+escapeHtml(m)+'</div><div class="entry">店舗累計売上：'+(actual.sales===undefined?'未報告':yen(actual.sales))+'</div><div class="entry">店舗対外：'+(actual.external??'未報告')+'件</div><div class="entry">個人実績登録：'+entries.length+'件 / 日報：'+reports.length+'件</div><p class="muted micro">店舗累計と個人登録は二重計上しません。</p>';
  const admin=!!cloudSession&&activeRole==='admin';$('adminDashboard').style.display=admin?'block':'none';if(admin){const missing=state.staff.filter(name=>!insightReports().some(r=>r.date===nowDay()&&r.staff===name));$('missingReports').textContent='本日の日報未登録：'+(missing.join('・')||'なし')+'（休日・シフト未考慮）'}
 }
-function showDayInfo(day){const e=insightEntries().filter(x=>x.date===day&&!x.legacyMonthly),r=insightReports().filter(x=>x.date===day);$('selectedDay').textContent=day+'：実績登録 '+e.length+'件、対外換算 '+e.filter(x=>x.type==='対外').reduce((t,x)=>t+weightedDeals(x),0)+'件、日報 '+r.length+'件'}
+function showDayInfo(day){
+ const e=insightEntries().filter(x=>x.date===day&&!x.legacyMonthly&&!x.monthOnly),reports=insightReports().filter(x=>x.date===day);
+ const store=dailyStoreActual(day),combined=combinedDayActual(day),typeSum=t=>e.filter(x=>x.type===t).reduce((n,x)=>n+weightedDeals(x),0);
+ const metric=(name,key)=>'<div class="entry"><b>'+name+'</b>　'+(combined[key]===undefined?'未登録':combined[key]+'件')+'<div class="muted micro">店舗報告：'+(store[key]??'なし')+' / 個別：'+(key==='external'?typeSum('対外'):key==='device'?typeSum('機変'):key==='ys'?typeSum('YS'):e.reduce((n,x)=>n+(Number(x[key])||0),0))+'（重複分は単日集計に加算しません）</div></div>';
+ $('selectedDay').innerHTML='<b>'+escapeHtml(day)+' の実績</b>'+metric('対外','external')+metric('機変','device')+metric('YS','ys')+metric('ADC','adc')+metric('あんスマ','insurance')+'<p class="muted micro">個別登録 '+e.length+'件 / 日報 '+reports.length+'件 / 店舗売上 '+(store.sales===undefined?'未登録':yen(store.sales))+'</p>';
+}
 
 
 $('calendarMonth').value=nowDay().slice(0,7);
@@ -351,7 +356,17 @@ $('exportCsv').onclick=()=>{
  const u=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
  const a=document.createElement('a');a.href=u;a.download='GLINK-ONE-'+m+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1500);
 };
-$('printReport').onclick=()=>window.print();
+$('printReport').onclick=()=>{
+ const m=$('calendarMonth').value||nowDay().slice(0,7),actual=effectiveMonth(m).sums,entries=insightEntries().filter(x=>String(x.date).startsWith(m)),reports=insightReports().filter(x=>String(x.date).startsWith(m));
+ const target=state.targets?.[m]||{};
+ const fmt=(k)=>actual[k]===undefined?'未登録':k==='sales'?yen(actual[k]):actual[k]+'件';
+ const goals=(k)=>target[k]===undefined?'未設定':k==='sales'?yen(target[k]):target[k]+'件';
+ const rows=[['売上','sales'],['対外','external'],['機変','device'],['YS','ys'],['ADC','adc'],['あんスマ','insurance']].map(([label,k])=>'<tr><td>'+label+'</td><td>'+fmt(k)+'</td><td>'+goals(k)+'</td></tr>').join('');
+ const people=state.staff.map(name=>{const x=entries.filter(e=>e.staff===name),deals=x.filter(e=>e.type==='対外').reduce((n,e)=>n+weightedDeals(e),0);return '<tr><td>'+escapeHtml(name)+'</td><td>'+deals+'件</td><td>'+x.length+'件</td><td>'+yen(x.reduce((n,e)=>n+(Number(e.sales)||0),0))+'</td></tr>'}).join('');
+ const doc='<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GLINK ONE '+escapeHtml(m)+' 月間報告書</title><style>@page{size:A4;margin:16mm}body{font:12px -apple-system,BlinkMacSystemFont,sans-serif;color:#1a2634}h1{font-size:23px}h2{font-size:15px;margin:24px 0 8px;border-bottom:2px solid #234769;padding-bottom:5px}table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #ccd6e0;padding:9px}th{background:#ecf3fb}.muted{color:#5b6778;font-size:11px}.buttons{margin-bottom:18px}@media print{.buttons{display:none}}</style></head><body><div class="buttons"><button onclick="window.print()">印刷・PDFとして保存</button></div><h1>GLINK ONE 月間実績報告書</h1><p class="muted">対象：'+escapeHtml(m)+'　｜　作成日：'+nowDay()+'</p><h2>店舗全体（店舗報告ベース）</h2><table><thead><tr><th>項目</th><th>実績</th><th>月間目標</th></tr></thead><tbody>'+rows+'</tbody></table><h2>担当者別・個別登録</h2><table><thead><tr><th>スタッフ</th><th>対外換算</th><th>登録件数</th><th>個別登録売上</th></tr></thead><tbody>'+people+'</tbody></table><p>個別登録 '+entries.length+'件 ／ 日報 '+reports.length+'件</p><p class="muted">店舗累計と個別実績は別データとして表示。個別実績を店舗累計に二重加算していません。</p></body></html>';
+ const blob=new Blob([doc],{type:'text/html;charset=utf-8'}),url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download='GLINK-ONE-'+m+'-PDF保存用.html';link.click();setTimeout(()=>URL.revokeObjectURL(url),120000);
+ alert('PDF保存用のA4報告書を作成しました。ダウンロードしたファイルをSafariで開き「印刷」→「共有」からPDFとして保存してください。');
+};
 $('safeBackup').onclick=()=>{
  if(!cloudReady||activeRole!=='admin')return alert('管理者のみ利用できます');
  const json=JSON.stringify({exportedAt:new Date().toISOString(),team:state,records:submittedRecords},null,2);
