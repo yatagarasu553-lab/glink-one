@@ -762,10 +762,25 @@ function imgLoadData(){
  $('imgDataStatus').textContent=(rep?'日報取得済み':'日報未入力')+' ／ 個別実績 '+deals.length+'登録。画像用の獲得件数はキャッチ・クローズ各1件で集計。';
  drawReportImage();
 }
+function reportPalette(){
+ const fallback={accents:['#fa375e','#177ee8','#0aac84','#f29a14','#8050d2','#11a9b8'],surface:'#fffffff0',ink:'#172239',layout:0};
+ if(!activityAiImage?.complete||!activityAiImage.naturalWidth)return fallback;
+ try{
+  const x=document.createElement('canvas');x.width=36;x.height=36;const ctx=x.getContext('2d',{willReadFrequently:true});ctx.drawImage(activityAiImage,0,0,36,36);
+  const d=ctx.getImageData(0,0,36,36).data;let rs=0,gs=0,bs=0,count=0,sideL=0,sideR=0;
+  for(let y=0;y<36;y+=2)for(let xx=0;xx<36;xx+=2){const i=(y*36+xx)*4;if(d[i+3]<128)continue;rs+=d[i];gs+=d[i+1];bs+=d[i+2];count++;if(xx<18)sideL+=Math.abs(d[i]-d[i+1])+Math.abs(d[i+1]-d[i+2]);else sideR+=Math.abs(d[i]-d[i+1])+Math.abs(d[i+1]-d[i+2]);}
+  if(!count)return fallback;
+  const r=rs/count,g=gs/count,b=bs/count;
+  const hsl=(rgb)=>{const a=rgb.map(v=>v/255),hi=Math.max(...a),lo=Math.min(...a),diff=hi-lo;let h=0;if(diff){if(hi===a[0])h=((a[1]-a[2])/diff)%6;else if(hi===a[1])h=(a[2]-a[0])/diff+2;else h=(a[0]-a[1])/diff+4;h=(h*60+360)%360}return h};
+  const hue=hsl([r,g,b]),accents=[0,28,174,56,270,320].map(v=>'hsl('+Math.round((hue+v)%360)+' 76% '+(v===56?'39':'42')+'%)');
+  const light=(.2126*r+.7152*g+.0722*b)>155;
+  return {accents,surface:light?'#fffcf0ef':'#f7faffef',ink:'#152035',layout:sideL>sideR*1.28?2:sideR>sideL*1.28?1:0};
+ }catch(e){return fallback}
+}
 function drawReportImage(){
  const cv=$('imgCanvas'),c=cv.getContext('2d');if(!c)return;
  const n=imageNumbers(),date=$('imgDate').value||nowDay(),staff=$('imgStaff').value||loggedStaffName||'スタッフ';
- const colors=['#f22f65','#147bdc','#08a779','#f19813','#8249cb','#08a2ac'];
+ const palette=reportPalette(),colors=palette.accents,variant=palette.layout;
  const w=1080,h=1350;
  const background=c.createLinearGradient(0,0,w,h);background.addColorStop(0,'#0a5aba');background.addColorStop(.42,'#57bdff');background.addColorStop(1,'#064bb8');c.fillStyle=background;c.fillRect(0,0,w,h);
  if(activityAiImage?.complete&&activityAiImage.naturalWidth){
@@ -776,24 +791,24 @@ function drawReportImage(){
  c.save();c.translate(-10,24);c.rotate(-.05);c.fillStyle='#071c48e8';c.beginPath();c.roundRect(10,0,690,192,25);c.fill();c.restore();
  c.fillStyle='#fff';c.font='900 79px sans-serif';c.fillText('活動報告',28,110);
  c.font='bold 23px sans-serif';c.fillText('GLINK ONE  /  DAILY SALES REPORT',38,154);
- c.fillStyle='#fff';c.beginPath();c.roundRect(730,32,324,159,20);c.fill();c.fillStyle='#123766';c.font='bold 50px sans-serif';c.fillText(date.slice(5).replace('-',' / '),752,96);
+ c.fillStyle=palette.surface;c.beginPath();c.roundRect(730,32,324,159,20);c.fill();c.fillStyle=palette.ink;c.font='bold 50px sans-serif';c.fillText(date.slice(5).replace('-',' / '),752,96);
  c.font='bold 26px sans-serif';c.fillText((state.settings?.store||'富谷店')+'  '+staff,749,152);
  const rate=(x,y)=>y>0?Math.round(x/y*100)+'%':'0%';
  const panel=(x,y,width,height,tone,title,value,sub)=>{
-  c.save();c.shadowColor='#00154055';c.shadowBlur=15;c.shadowOffsetY=6;c.fillStyle='#fff';c.beginPath();c.roundRect(x,y,width,height,15);c.fill();c.restore();
+  c.save();c.shadowColor='#00154055';c.shadowBlur=15;c.shadowOffsetY=6;c.fillStyle=palette.surface;c.beginPath();c.roundRect(x,y,width,height,15);c.fill();c.restore();
   c.lineWidth=4;c.strokeStyle=tone;c.beginPath();c.roundRect(x,y,width,height,15);c.stroke();
   c.fillStyle=tone;c.beginPath();c.roundRect(x,y,width,43,[13,13,0,0]);c.fill();
   c.fillStyle='#fff';c.font='bold 23px sans-serif';c.fillText(title,x+12,y+29);
-  c.fillStyle='#121b2c';c.font='900 '+(String(value).length>6?32:48)+'px sans-serif';c.fillText(value,x+13,y+99);
+  c.fillStyle=palette.ink;c.font='900 '+(String(value).length>6?32:48)+'px sans-serif';c.fillText(value,x+13,y+99);
   if(sub){c.fillStyle=tone;c.font='bold 18px sans-serif';c.fillText(sub,x+12,y+height-11)}
  };
  // Two compact, unequal left-side columns leave a large uninterrupted full-height character on the right.
- panel(22,218,250,163,colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ');
- panel(291,218,250,163,colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount));
- panel(22,398,250,163,colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount));
- panel(291,398,250,163,colors[3],'商談数',n.talkCount+'組','');
- panel(22,578,250,163,colors[0],'成約数',n.won+'組','');
- panel(291,578,250,163,colors[4],'成約率',rate(n.won,n.talkCount),'');
+ panel(22,218,variant===1?265:250,163,colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ');
+ panel(variant===1?305:291,218,variant===1?235:250,163,colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount));
+ panel(22,398,variant===2?225:250,163,colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount));
+ panel(variant===2?266:291,398,variant===2?274:250,163,colors[3],'商談数',n.talkCount+'組','');
+ panel(22,578,variant===1?285:250,163,colors[0],'成約数',n.won+'組','');
+ panel(variant===1?325:291,578,variant===1?215:250,163,colors[4],'成約率',rate(n.won,n.talkCount),'');
  // Short motivational paint mark on the lower right, legible over any generated imagery.
  c.save();c.translate(746,685);c.rotate(-.13);c.fillStyle='#ffe82a';c.beginPath();c.roundRect(-7,-44,305,90,16);c.fill();c.fillStyle='#122447';c.font='900 30px sans-serif';c.fillText('今日も全力で!!',5,13);c.restore();
  // KPI row sits in the foreground at the bottom of the character artwork.
@@ -801,11 +816,11 @@ function drawReportImage(){
  c.fillStyle='#fff';c.font='bold 28px sans-serif';c.fillText('個別実績  /  付帯獲得',42,803);
  const mini=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
  for(let i=0;i<mini.length;i++){const x=22+(i%3)*355,y=839+Math.floor(i/3)*99,clr=colors[i];
-  c.fillStyle='#ffffffed';c.beginPath();c.roundRect(x,y,333,87,15);c.fill();c.fillStyle=clr;c.beginPath();c.roundRect(x,y,333,33,[15,15,0,0]);c.fill();c.fillStyle='#fff';c.font='bold 21px sans-serif';c.fillText(mini[i][0],x+14,y+24);c.fillStyle='#101b2d';c.font='900 38px sans-serif';c.fillText(mini[i][1]+'件',x+14,y+72);
+  c.fillStyle=palette.surface;c.beginPath();c.roundRect(x,y,333,87,15);c.fill();c.fillStyle=clr;c.beginPath();c.roundRect(x,y,333,33,[15,15,0,0]);c.fill();c.fillStyle='#fff';c.font='bold 21px sans-serif';c.fillText(mini[i][0],x+14,y+24);c.fillStyle=palette.ink;c.font='900 38px sans-serif';c.fillText(mini[i][1]+'件',x+14,y+72);
  }
  c.fillStyle='#0a2e68ed';c.beginPath();c.roundRect(22,1052,1036,51,14);c.fill();c.fillStyle='#fff';c.font='bold 27px sans-serif';c.fillText('✎  今日の振り返り',45,1086);
- c.fillStyle='#fffffff2';c.beginPath();c.roundRect(22,1116,1036,171,18);c.fill();
- c.fillStyle='#112343';c.font='28px sans-serif';const memo=$('imgComment').value||'今日も全力で取り組みます！';let line='',yy=1162;
+ c.fillStyle=palette.surface;c.beginPath();c.roundRect(22,1116,1036,171,18);c.fill();
+ c.fillStyle=palette.ink;c.font='28px sans-serif';const memo=$('imgComment').value||'今日も全力で取り組みます！';let line='',yy=1162;
  for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>953){if(line)c.fillText(line,46,yy);yy+=37;line=''}if(ch!=='\n')line+=ch;if(yy>1261)break}if(yy<=1261&&line)c.fillText(line,46,yy);
  c.fillStyle='#fff';c.font='bold 23px sans-serif';c.fillText('GLINK ONE  •  LINE WORKS 提出用',30,1325);
 }
