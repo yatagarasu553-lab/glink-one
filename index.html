@@ -939,7 +939,7 @@ async function createActivityAi(force=false){
   const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('AI画像を読み込めませんでした'));image.src=typeof src==='string'?src:src.image});
   activityAiDesign=typeof src==='string'?null:src.design;
   activityAiImage=image;$('imgTheme').value='cool';drawReportImage();
-  status.textContent='AIデザイン：'+({pop:'ポップ',futuristic:'近未来',luxury:'高級感',bright:'爽やか'}[activityAiDesign?.style]||'自動')+' ／ 配置 '+(activityAiDesign?.layout==null?'自動':activityAiDesign.layout+1)+'。PNG保存・共有できます。';
+  status.textContent=(activityAiDesign?.left_clear===false?'構図注意：人物が情報エリアに重なる可能性があります。再生成をおすすめします。／ ':'')+'AIデザイン：'+({pop:'ポップ',futuristic:'近未来',luxury:'高級感',bright:'爽やか'}[activityAiDesign?.style]||'自動')+' ／ 配置 '+(activityAiDesign?.layout==null?'自動':activityAiDesign.layout+1)+'。PNG保存・共有できます。';
  }catch(e){status.textContent='AI画像生成を利用できません：'+e.message+'（従来テンプレは引き続き使えます）'}
  finally{activityAiBusy=false;$('imgAiGenerate').disabled=false;$('imgAiReroll').disabled=false}
 }
