@@ -797,10 +797,10 @@ function drawReportImage(){
  // Distinct, editorial-sized cards use hand-drawn color bars, not equal white dashboard tiles.
  function card(x,y,w,h,color,label,value,detail,emphasis=false){
   c.save();c.shadowColor='#03194377';c.shadowBlur=9;c.shadowOffsetY=5;rect(x,y,w,h,15,'#fcfffff4');c.restore();
-  c.strokeStyle=color;c.lineWidth=3;c.strokeRect(x+2,y+2,w-4,h-4);
+  c.strokeStyle=color;c.lineWidth=emphasis?4:2;c.strokeRect(x+2,y+2,w-4,h-4);
   brush(x-1,y,w+2,50,color,emphasis?-.03:.018);
   c.fillStyle='#fff';c.font='900 '+(emphasis?28:25)+'px sans-serif';text(label,x+14,y+34,w-28);
-  c.fillStyle='#081d3c';c.font='900 '+(emphasis?64:57)+'px sans-serif';text(value,x+16,y+114,w-26);
+  c.fillStyle='#081d3c';c.font='900 '+(emphasis?72:55)+'px sans-serif';text(value,x+16,y+114,w-26);
   if(detail){rect(x+12,y+h-42,w-24,31,14,'#e6f3ff');c.fillStyle=color;c.font='bold 20px sans-serif';text(detail,x+21,y+h-19,w-36)}
  }
  // Rotate between three verified collision-free metric layouts. The hero remains on the right.
@@ -809,53 +809,45 @@ function drawReportImage(){
  if(aiVisualStyle==='futuristic')colors.splice(0,colors.length,'#11d5ed','#5856d6','#147de9','#8353c7','#00a4e6','#3671ca');
  else if(aiVisualStyle==='luxury')colors.splice(0,colors.length,'#aa812c','#7c6334','#b79044','#695335','#a78036','#8c712f');
  else if(aiVisualStyle==='pop')colors.splice(0,colors.length,'#ec3671','#2577ef','#11ad89','#f08e26','#8544cb','#0bb4b9');
+ // Exact non-overlapping editorial grid. All layouts reserve the right-hand character area.
  const arrangements=[
- [[20,227,258,166],[291,242,252,153],[22,408,253,163],[290,416,251,153],[20,583,292,174],[326,593,215,161]],
- [[20,228,283,169],[319,228,223,154],[20,412,230,152],[267,397,275,171],[20,585,267,170],[301,584,241,171]],
- [[20,224,238,161],[274,238,268,161],[20,403,284,168],[320,420,222,151],[20,592,300,162],[337,587,205,166]]
+  [[20,225,238,158],[270,225,238,158],[20,400,238,158],[270,400,238,158],[20,575,238,175],[270,575,238,175]],
+  [[20,225,238,158],[270,236,238,158],[20,400,238,158],[270,411,238,158],[20,575,238,175],[270,586,238,164]],
+  [[20,236,238,158],[270,225,238,158],[20,411,238,158],[270,400,238,158],[20,586,238,164],[270,575,238,175]]
  ];
  const tiles=[
- [colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ',true],
- [colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
- [colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount),false],
- [colors[3],'商談数',n.talkCount+'組','',false],
- [colors[0],'成約数',n.won+'組','',true],
- [colors[4],'成約率',rate(n.won,n.talkCount),'',true]
+  [colors[1],'キャッチ母数',n.catchCount+'件','本日のアプローチ',false],
+  [colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
+  [colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount),false],
+  [colors[2],'商談数',n.talkCount+'組','',false],
+  [colors[0],'成約数',n.won+'組','',true],
+  [colors[0],'成約率',rate(n.won,n.talkCount),'',true]
  ];
- // Score safe candidate layouts against the generated illustration, preserving accurate canvas-rendered numbers.
+ // Analyze the AI background, using only geometry that has already passed collision checks.
  function chooseImageAwareTiles(){
   if(!hasArt)return arrangements[posterMode];
   try{
    const sample=document.createElement('canvas');sample.width=108;sample.height=135;
-   const sc=sample.getContext('2d',{willReadFrequently:true});
-   sc.drawImage(cv,0,0,108,135);
+   const sc=sample.getContext('2d',{willReadFrequently:true});sc.drawImage(activityAiImage,0,0,108,135);
    const pixels=sc.getImageData(0,0,108,135).data;
-   const salience=(x,y)=>{
+   const significance=(x,y)=>{
     const px=Math.max(1,Math.min(106,Math.round(x/10))),py=Math.max(1,Math.min(133,Math.round(y/10)));
-    const o=(a,b)=>(b*108+a)*4,k=o(px,py),a=o(px+1,py),b=o(px,py+1);
+    const idx=(a,b)=>(b*108+a)*4,k=idx(px,py),a=idx(px+1,py),b=idx(px,py+1);
     const r=pixels[k],g=pixels[k+1],bl=pixels[k+2];
     const edge=(Math.abs(r-pixels[a])+Math.abs(g-pixels[a+1])+Math.abs(bl-pixels[a+2])+Math.abs(r-pixels[b])+Math.abs(g-pixels[b+1])+Math.abs(bl-pixels[b+2]))/765;
     const skin=r>75&&g>40&&bl>25&&r>g*1.12&&g>bl*.88&&Math.max(r,g,bl)-Math.min(r,g,bl)>24;
     return edge*2.8+(skin?1.4:0);
    };
-   const candidates=[];
-   for(let mode=0;mode<3;mode++)for(const dx of [-8,0,8])for(const dy of [-6,0,6]){
-    const cards=arrangements[mode].map(([x,y,w,h])=>[x+dx,y+dy,w,h]);
-    let score=0;
-    for(const [x,y,w,h] of cards)for(let py=y+24;py<y+h-10;py+=36)for(let px=x+18;px<x+w-10;px+=38)score+=salience(px,py);
-    score+=mode===posterMode?0:.16;
-    candidates.push({cards,score});
-   }
+   const candidates=arrangements.map((cards,mode)=>{
+    let score=mode===posterMode?0:.18;
+    for(const [x,y,w,h] of cards)for(let py=y+22;py<y+h-12;py+=30)for(let px=x+16;px<x+w-12;px+=32)score+=significance(px,py);
+    return {cards,score};
+   });
    candidates.sort((a,b)=>a.score-b.score);
    return candidates[0].cards;
-  }catch(e){console.warn('GLINK image composition fallback',e);return arrangements[posterMode]}
+  }catch(e){console.warn('GLINK composition fallback',e);return arrangements[posterMode]}
  }
- // Reserve the character area on the right: keep KPI cards at x <= 505.
- chooseImageAwareTiles().forEach((p,i)=>{
-  const [x,y,w,h]=p,scale=Math.min(1,(505-20)/(x+w-20));
-  const nx=20+(x-20)*scale,nw=w*scale;
-  card(nx,y,nw,h,...tiles[i]);
- });
+ chooseImageAwareTiles().forEach((p,i)=>card(...p,...tiles[i]));
  brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
  const items=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
  items.forEach(([label,num],i)=>{
@@ -875,8 +867,18 @@ function drawReportImage(){
  footerShade.addColorStop(1,'rgba(4,24,59,.88)');
  c.fillStyle=footerShade;c.fillRect(0,1085,W,265);
  brush(15,1102,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1146);
- rect(20,1164,744,Math.min(127,Math.max(85,70+Math.ceil(($('imgComment').value||'').length/29)*25)),16,'#fffffff2');c.fillStyle='#152b4e';c.font='27px sans-serif';
- const memo=$('imgComment').value||'本日の振り返りを入力してください。';let line='',y=1204;for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>697){if(line)text(line,39,y,699);line='';y+=35}if(ch!=='\n')line+=ch;if(y>1276)break}if(line&&y<=1276)text(line,39,y,699);
+ const memo=$('imgComment').value||'本日の振り返りを入力してください。';
+ c.font='26px sans-serif';
+ const memoLines=[];let line='';
+ for(const ch of memo){if(ch==='\n'){memoLines.push(line);line='';continue}
+  if(c.measureText(line+ch).width>690&&line){memoLines.push(line);line=''}
+  line+=ch;
+ }
+ if(line||!memoLines.length)memoLines.push(line);
+ const memoVisible=memoLines.slice(0,3),memoHeight=Math.max(78,24+memoVisible.length*36);
+ rect(20,1164,744,memoHeight,16,'#fffffff2');
+ c.fillStyle='#152b4e';c.font='26px sans-serif';
+ memoVisible.forEach((entry,i)=>text(i===2&&memoLines.length>3?entry.slice(0,-1)+'…':entry,39,1203+i*36,690));
  brush(22,1305,463,39,'#063365ca');c.fillStyle='#fff';c.font='bold 21px sans-serif';text('GLINK ONE  /  LINE WORKS 提出用',40,1332);
 }
 function initImageMaker(){
