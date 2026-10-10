@@ -815,13 +815,15 @@ function drawReportImage(){
   [[20,225,238,158],[270,236,238,158],[20,400,238,158],[270,411,238,158],[20,575,238,175],[270,586,238,164]],
   [[20,236,238,158],[270,225,238,158],[20,411,238,158],[270,400,238,158],[20,586,238,164],[270,575,238,175]]
  ];
+ // One restrained palette per image, with a distinct warm emphasis for conversion KPIs.
+ const main=colors[1],secondary=colors[2],conversion=aiVisualStyle==='luxury'?'#a37826':aiVisualStyle==='pop'?'#d82e68':'#0799b4';
  const tiles=[
-  [colors[1],'キャッチ母数',n.catchCount+'件','本日のアプローチ',false],
-  [colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
-  [colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount),false],
-  [colors[2],'商談数',n.talkCount+'組','',false],
-  [colors[0],'成約数',n.won+'組','',true],
-  [colors[0],'成約率',rate(n.won,n.talkCount),'',true]
+  [main,'キャッチ母数',n.catchCount+'件','本日のアプローチ',false],
+  [main,'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
+  [secondary,'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount),false],
+  [secondary,'商談数',n.talkCount+'組','',false],
+  [conversion,'成約数',n.won+'組','',true],
+  [conversion,'成約率',rate(n.won,n.talkCount),'',true]
  ];
  // Analyze the AI background, using only geometry that has already passed collision checks.
  function chooseImageAwareTiles(){
@@ -843,6 +845,7 @@ function drawReportImage(){
     for(const [x,y,w,h] of cards)for(let py=y+22;py<y+h-12;py+=30)for(let px=x+16;px<x+w-12;px+=32)score+=significance(px,py);
     return {cards,score};
    });
+   if(activityAiDesign?.left_clear===false)console.warn('AI image left area is occupied; safe-grid fallback only');
    candidates.sort((a,b)=>a.score-b.score);
    return candidates[0].cards;
   }catch(e){console.warn('GLINK composition fallback',e);return arrangements[posterMode]}
@@ -854,7 +857,7 @@ function drawReportImage(){
   const col=posterMode===2?i%2:i%3,row=posterMode===2?Math.floor(i/2):Math.floor(i/3);
   const width=posterMode===2?318:posterMode===1?223:217;
   const x=20+col*(posterMode===2?344:232),y=posterMode===2?853+row*77:869+row*112;
-  const h=posterMode===2?67:97,color=colors[i];
+  const h=posterMode===2?67:97,color=[main,main,secondary,secondary,conversion,conversion][i];
   c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,width,h,12,'#fafffff2');c.restore();brush(x,y,width,posterMode===2?29:36,color,i%2?-.02:.02);
   c.fillStyle='#fff';c.font='bold 21px sans-serif';text(label,x+12,y+(posterMode===2?22:26),width-19);
   c.fillStyle='#091c3b';c.font='900 '+(posterMode===2?31:42)+'px sans-serif';text(num+'件',x+15,y+(posterMode===2?57:81),width-25);
