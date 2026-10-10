@@ -801,24 +801,36 @@ function drawReportImage(){
   c.fillStyle='#081d3c';c.font='900 '+(emphasis?64:57)+'px sans-serif';text(value,x+16,y+114,w-26);
   if(detail){rect(x+12,y+h-42,w-24,31,14,'#e6f3ff');c.fillStyle=color;c.font='bold 20px sans-serif';text(detail,x+21,y+h-19,w-36)}
  }
- // 6 asymmetrical hero metrics. Left 55% reserved for stats; right-side character stays visible.
- card(20,227,258,166,colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ',true);
- card(291,242,252,153,colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount));
- card(22,408,253,163,colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount));
- card(290,416,251,153,colors[3],'商談数',n.talkCount+'組','');
- card(20,583,292,174,colors[0],'成約数',n.won+'組','',true);
- card(326,593,215,161,colors[4],'成約率',rate(n.won,n.talkCount),'',true);
+ // Rotate between three verified collision-free metric layouts. The hero remains on the right.
+ const posterMode=Math.abs((activityAiVersion||0)+(palette.layout||0))%3;
+ const arrangements=[
+ [[20,227,258,166],[291,242,252,153],[22,408,253,163],[290,416,251,153],[20,583,292,174],[326,593,215,161]],
+ [[20,228,283,169],[319,228,223,154],[20,412,230,152],[267,397,275,171],[20,585,267,170],[301,584,241,171]],
+ [[20,224,238,161],[274,238,268,161],[20,403,284,168],[320,420,222,151],[20,592,300,162],[337,587,205,166]]
+ ];
+ const tiles=[
+ [colors[0],'キャッチ母数',n.catchCount+'件','本日のアプローチ',true],
+ [colors[1],'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
+ [colors[2],'誘導数',n.inviteCount+'件','誘導率 '+rate(n.inviteCount,n.stopCount),false],
+ [colors[3],'商談数',n.talkCount+'組','',false],
+ [colors[0],'成約数',n.won+'組','',true],
+ [colors[4],'成約率',rate(n.won,n.talkCount),'',true]
+ ];
+ arrangements[posterMode].forEach((p,i)=>card(...p,...tiles[i]));
  brush(693,704,354,105,'#ffe323',-.14);c.save();c.translate(722,755);c.rotate(-.14);c.fillStyle='#0c2451';c.font='900 33px sans-serif';text('今日も全力で!!',0,0,295);c.restore();
  brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
  const items=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
  items.forEach(([label,num],i)=>{
-  const x=20+(i%3)*232,y=869+Math.floor(i/3)*112,w=217,h=97,color=colors[i];
-  c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,w,h,12,'#fafffff2');c.restore();brush(x,y,w,36,color,i%2?-.02:.02);
-  c.fillStyle='#fff';c.font='bold 22px sans-serif';text(label,x+12,y+26,w-19);
-  c.fillStyle='#091c3b';c.font='900 42px sans-serif';text(num+'件',x+15,y+81,w-25);
+  const col=posterMode===2?i%2:i%3,row=posterMode===2?Math.floor(i/2):Math.floor(i/3);
+  const width=posterMode===2?318:posterMode===1?223:217;
+  const x=20+col*(posterMode===2?344:232),y=posterMode===2?853+row*77:869+row*112;
+  const h=posterMode===2?67:97,color=colors[i];
+  c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,width,h,12,'#fafffff2');c.restore();brush(x,y,width,posterMode===2?29:36,color,i%2?-.02:.02);
+  c.fillStyle='#fff';c.font='bold 21px sans-serif';text(label,x+12,y+(posterMode===2?22:26),width-19);
+  c.fillStyle='#091c3b';c.font='900 '+(posterMode===2?31:42)+'px sans-serif';text(num+'件',x+15,y+(posterMode===2?57:81),width-25);
  });
  brush(15,1102,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1146);
- rect(20,1164,744,127,16,'#fffffff2');c.fillStyle='#152b4e';c.font='27px sans-serif';
+ rect(20,1164,744,Math.min(127,Math.max(85,70+Math.ceil(($('imgComment').value||'').length/29)*25)),16,'#fffffff2');c.fillStyle='#152b4e';c.font='27px sans-serif';
  const memo=$('imgComment').value||'今日も全力で取り組みます！';let line='',y=1204;for(const ch of memo){if(ch==='\n'||c.measureText(line+ch).width>697){if(line)text(line,39,y,699);line='';y+=35}if(ch!=='\n')line+=ch;if(y>1276)break}if(line&&y<=1276)text(line,39,y,699);
  brush(22,1305,463,39,'#063365ca');c.fillStyle='#fff';c.font='bold 21px sans-serif';text('GLINK ONE  /  LINE WORKS 提出用',40,1332);
 }
