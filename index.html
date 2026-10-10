@@ -790,10 +790,10 @@ function drawReportImage(){
  const text=(str,x,y,max)=>{c.fillText(str,x,y,max)};
  const rect=(x,y,w,h,r,color)=>{c.fillStyle=color;c.beginPath();c.roundRect(x,y,w,h,r);c.fill()};
  // Dark brush headline is intentionally smaller than the hero artwork so the character remains foreground.
- brush(14,22,640,168,'#051b4ff1',-.025);
+ brush(14,22,640,168,'#07376cf4',-.012);
  c.fillStyle='#fff';c.shadowColor='#011736';c.shadowBlur=3;c.font='900 81px sans-serif';text('活動報告',34,112,560);c.shadowBlur=0;
  c.font='bold 23px sans-serif';text('GLINK ONE  /  DAILY SALES REPORT',35,155,580);
- brush(666,24,393,152,'#fffffff2',.025);c.fillStyle='#082b62';c.font='900 58px sans-serif';text(date.slice(5).replace('-',' / '),712,96,310);c.font='bold 26px sans-serif';text((state.settings?.store||'富谷店')+'  '+staff,710,145,315);
+ brush(666,24,393,152,'#fffffff6',.012);c.fillStyle='#082b62';c.font='900 58px sans-serif';text(date.slice(5).replace('-',' / '),712,96,310);c.font='bold 26px sans-serif';text((state.settings?.store||'富谷店')+'  '+staff,710,145,315);
  // Distinct, editorial-sized cards use hand-drawn color bars, not equal white dashboard tiles.
  function card(x,y,w,h,color,label,value,detail,emphasis=false){
   c.save();c.shadowColor='#03194377';c.shadowBlur=9;c.shadowOffsetY=5;rect(x,y,w,h,15,'#fcfffff4');c.restore();
@@ -816,7 +816,7 @@ function drawReportImage(){
   [[20,220,488,157],[20,390,238,157],[270,390,238,157],[20,560,238,190],[270,560,238,190]],
   [[20,220,238,157],[270,220,238,157],[20,390,488,156],[20,560,238,190],[270,560,238,190]]
  ];
- const main=colors[1],secondary=colors[2],conversion=aiVisualStyle==='luxury'?'#a37826':aiVisualStyle==='pop'?'#d82e68':'#0799b4';
+ const main='#166cb5',secondary='#167a9e',conversion='#d62832';
  const tiles=[
   [main,'キャッチ母数',n.catchCount+'件','本日のアプローチ',false],
   [main,'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
@@ -824,20 +824,27 @@ function drawReportImage(){
   [secondary,'商談数',n.talkCount+'組','',false]
  ];
  function drawOutcomes(x,y,w,h){
-  // Prominent unified results block with internally separated values.
-  c.save();c.shadowColor='#03194377';c.shadowBlur=10;c.shadowOffsetY=5;
-  rect(x,y,w,h,16,'#fafffff5');c.restore();
+  // Responsive conversion panel: no two values ever share an unmeasured text region.
+  c.save();c.shadowColor='#03194377';c.shadowBlur=8;c.shadowOffsetY=4;
+  rect(x,y,w,h,13,'#fffffff7');c.restore();
   c.strokeStyle=conversion;c.lineWidth=4;c.strokeRect(x+2,y+2,w-4,h-4);
-  brush(x,y,w,46,conversion,-.012);
-  c.fillStyle='#fff';c.font='900 25px sans-serif';text('本日の成約実績',x+15,y+32,w-30);
-  c.fillStyle='#0a2446';c.font='bold 20px sans-serif';
-  text('成約数',x+18,y+81,w*.43);text('成約率',x+w*.54,y+81,w*.43);
-  c.font='900 '+(w>300?71:61)+'px sans-serif';
-  text(n.won+'組',x+16,y+h-27,w*.46);
-  text(rate(n.won,n.talkCount),x+w*.53,y+h-27,w*.43);
-  c.fillStyle='#bfdce6';c.fillRect(x+w*.5,y+66,2,h-79);
+  brush(x,y,w,43,conversion,-.01);
+  c.fillStyle='#fff';c.font='900 23px sans-serif';text('本日の成約実績',x+12,y+30,w-24);
+  const cells=[{label:'成約数',value:n.won+'組'},{label:'成約率',value:rate(n.won,n.talkCount)}];
+  const narrow=w<310;
+  cells.forEach((cell,i)=>{
+   const bx=narrow?x+14:x+14+i*w/2,by=narrow?y+54+i*61:y+70;
+   const maxW=narrow?w-30:w/2-26;
+   c.fillStyle='#254267';c.font='700 '+(narrow?17:20)+'px sans-serif';text(cell.label,bx,by+14,maxW);
+   let size=narrow?38:70;
+   do{c.font='900 '+size+'px sans-serif';if(c.measureText(cell.value).width<=maxW)break;size-=2;}while(size>20);
+   c.fillStyle='#0a2446';text(cell.value,bx,by+(narrow?51:83),maxW);
+  });
+  c.fillStyle='#c5d8e8';
+  if(narrow)c.fillRect(x+12,y+111,w-24,1);
+  else c.fillRect(x+w/2,y+62,2,h-76);
  }
- function candidateQuality(layout){
+  function candidateQuality(layout){
   // Reject layouts with overlapping metrics, and favor clear upper-left artwork.
   for(let i=0;i<layout.length;i++){
    const [x,y,w,h]=layout[i];if(x<16||x+w>515||y<210||y+h>760)return 1e9;
@@ -868,7 +875,7 @@ function drawReportImage(){
  const selected=choice.i===0?[0,1,2,3]:choice.i===1?[0,1,2,3]:[0,1,2,3];
  positions.slice(0,4).forEach((p,i)=>card(...p,...tiles[selected[i]]));
  drawOutcomes(...positions[4]);
- brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
+ brush(11,794,700,59,'#07376ff2',-.012);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
  const items=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
  items.forEach(([label,num],i)=>{
   const col=posterMode===2?i%2:i%3,row=posterMode===2?Math.floor(i/2):Math.floor(i/3);
@@ -886,7 +893,7 @@ function drawReportImage(){
  footerShade.addColorStop(.25,'rgba(4,24,59,.45)');
  footerShade.addColorStop(1,'rgba(4,24,59,.88)');
  c.fillStyle=footerShade;c.fillRect(0,1085,W,265);
- brush(15,1102,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1146);
+ brush(15,1102,760,60,'#07376ff0',-.012);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1146);
  const memo=$('imgComment').value||'本日の振り返りを入力してください。';
  c.font='26px sans-serif';
  const memoLines=[];let line='';
