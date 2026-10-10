@@ -812,8 +812,11 @@ function drawReportImage(){
  brush(666,24,393,152,'#fffffff2',.025);c.fillStyle='#082b62';c.font='900 58px sans-serif';text(date.slice(5).replace('-',' / '),712,96,310);c.font='bold 26px sans-serif';text((state.settings?.store||'富谷店')+'  '+staff,710,145,315);
  // Distinct, editorial-sized cards use hand-drawn color bars, not equal white dashboard tiles.
  function card(x,y,w,h,color,label,value,detail,emphasis=false){
-  c.save();c.shadowColor='#03194377';c.shadowBlur=9;c.shadowOffsetY=5;rect(x,y,w,h,15,'#fcfffff4');c.restore();
-  c.strokeStyle=color;c.lineWidth=emphasis?4:2;c.strokeRect(x+2,y+2,w-4,h-4);
+  const visual=activityAiDesign?.style||'bright';
+  const radius=visual==='pop'?19:visual==='luxury'?7:12;
+  const surface=visual==='futuristic'?'#f1fafff3':visual==='luxury'?'#fffcf3f7':'#fcfffff4';
+  c.save();c.shadowColor=visual==='futuristic'?color+'66':'#03194355';c.shadowBlur=visual==='futuristic'?14:7;c.shadowOffsetY=4;rect(x,y,w,h,radius,surface);c.restore();
+  c.strokeStyle=color;c.lineWidth=emphasis?4:visual==='luxury'?1.5:2;c.strokeRect(x+2,y+2,w-4,h-4);
   brush(x-1,y,w+2,50,color,emphasis?-.03:.018);
   c.fillStyle='#fff';c.font='900 '+(emphasis?28:25)+'px sans-serif';text(label,x+14,y+34,w-28);
   c.fillStyle='#081d3c';
