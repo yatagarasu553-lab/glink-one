@@ -210,7 +210,7 @@ async function deleteCloudDeal(id){
  try{
   const deleted=await authorized(()=>cloudFetch('/rest/v1/staff_submissions?id=eq.'+encodeURIComponent(id)+'&team_id=eq.'+encodeURIComponent(cloudCfg.team),{method:'DELETE',headers:{Prefer:'return=representation'}}));
   if(!Array.isArray(deleted)||deleted.length!==1)throw Error('削除権限または対象を確認してください');
-  await loadStaffSubmissions();alert('実績を削除しました');
+  await loadStaffSubmissions();await drawApprovalsAndAudit();alert('実績を削除しました。共有 → 登録履歴から復元できます');
  }catch(e){alert('削除できません：'+e.message)}
 }
 async function editCloudReport(id){
