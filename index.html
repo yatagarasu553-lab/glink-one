@@ -184,9 +184,38 @@ try{cloudCfg=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch{cloudCfg={}
 function cloudStatus(msg,bad=false){$('cloudStatus').className=bad?'warn':'notice';$('cloudStatus').textContent=msg;$('cloudBadge').textContent=cloudReady?(cloudDirty?'☁ 未同期':'☁ TEAM SYNC'):(cloudSession?'☁ 要確認':'LOCAL DEMO');$('cloudAccount').textContent=cloudSession?.user?.email||'';updateRoleUI()}
 function cloudValid(){return /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(cloudCfg.url||'')&&!!cloudCfg.key&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cloudCfg.team||'')}
 function cloudHeaders(extra={}){return {'apikey':cloudCfg.key,'Authorization':'Bearer '+cloudSession.access_token,'Content-Type':'application/json',...extra}}
-async function cloudFetch(path,opts={}){const r=await fetch(cloudCfg.url.replace(/\/$/,'')+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});let data=null;try{data=await r.json()}catch{}if(!r.ok)throw Error(data?.message||data?.error_description||data?.msg||'HTTP '+r.status);return data}
-async function refreshToken(){if(!cloudSession?.refresh_token)return;const r=await fetch(cloudCfg.url.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:cloudSession.refresh_token})});const v=await r.json();if(!r.ok)throw Error(v.msg||v.error_description||'ログイン期限切れ');cloudSession=v;localStorage.setItem('glink-cloud-session',JSON.stringify(cloudSession))}
-async function authorized(action){if(!cloudValid()||!cloudSession)throw Error('クラウド設定とログインが必要です');if(cloudSession.expires_at&&Date.now()/1000>cloudSession.expires_at-60)await refreshToken();return await action()}
+let tokenRefreshPromise=null;
+function storeCloudSession(v){
+ const next={...v,expires_at:Number(v.expires_at)||(Math.floor(Date.now()/1000)+Number(v.expires_in||3600))};
+ if(!next.access_token||!next.refresh_token||!next.user?.id)throw Error('ログイン情報が不完全です。再ログインしてください');
+ cloudSession=next;localStorage.setItem('glink-cloud-session',JSON.stringify(next));return next;
+}
+async function refreshToken(){
+ if(tokenRefreshPromise)return tokenRefreshPromise;
+ if(!cloudSession?.refresh_token)throw Error('ログイン期限が切れました。再ログインしてください');
+ const token=cloudSession.refresh_token;
+ tokenRefreshPromise=(async()=>{
+  const r=await fetch(cloudCfg.url.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:token})});
+  let v={};try{v=await r.json()}catch{}
+  if(!r.ok)throw Error(v.error_description||v.msg||v.message||'認証情報を更新できませんでした（HTTP '+r.status+'）');
+  return storeCloudSession(v);
+ })();
+ try{return await tokenRefreshPromise}finally{tokenRefreshPromise=null}
+}
+async function cloudFetch(path,opts={}){
+ if(!cloudSession?.access_token)throw Error('ログインしてください');
+ const send=()=>fetch(cloudCfg.url.replace(/\/$/,'')+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
+ let r=await send();
+ if(r.status===401&&cloudSession?.refresh_token){await refreshToken();r=await send()}
+ let data=null;try{data=await r.json()}catch{}
+ if(!r.ok)throw Error(data?.message||data?.error_description||data?.msg||'HTTP '+r.status);
+ return data;
+}
+async function authorized(action){
+ if(!cloudValid()||!cloudSession)throw Error('クラウド設定とログインが必要です');
+ if(!cloudSession.expires_at||Date.now()/1000>Number(cloudSession.expires_at)-120)await refreshToken();
+ return action();
+}
 
 function updateRoleUI(){
  const roleText=cloudSession?(activeRole==='admin'?'管理者：店舗データの編集可能':activeRole==='member'?'一般スタッフ：本人の個別実績・日報を登録可能':'権限を確認しています'):'未ログイン：端末内デモモード';
@@ -335,9 +364,10 @@ function hasPendingCloud(){try{return JSON.parse(localStorage.getItem(DRAFT_KEY)
 window.addEventListener('online',()=>{if(cloudReady&&cloudDirty)cloudSchedule();else if(cloudSession&&hasPendingCloud())cloudStatus('接続が戻りました。未送信データがあるため自動上書きせず、管理者の確認を待っています。',true)});
 window.addEventListener('beforeunload',e=>{if(cloudDirty){e.preventDefault();e.returnValue='未送信の変更があります';}});
 const basePersist=persist;persist=function(){if(cloudSession&&activeRole!=='admin'){alert('共有モードでは管理者のみ編集できます');return}basePersist();if(cloudSession&&activeRole==='admin'){cloudDirty=true;savePendingCloud();cloudStatus(cloudReady?'変更を保存中…':'未送信の変更を端末に保存しました。接続回復後に再同期してください。',!cloudReady);if(cloudReady)cloudSchedule()}};
-function initCloudForm(){drawRoster();$('cloudUrl').value=cloudCfg.url||'';$('cloudKey').value=cloudCfg.key||'';$('cloudTeam').value=cloudCfg.team||'';cloudStatus('端末内モード。共有機能を使うには設定とログインが必要です。');try{cloudSession=JSON.parse(localStorage.getItem('glink-cloud-session')||'null')}catch{cloudSession=null}if(cloudSession&&cloudValid()){cloudStatus('ログイン情報を確認しています…');authorized(()=>loadRole()).then(()=>cloudDownload(true)).catch(e=>{console.error('GLINK auto sign-in',e);cloudStatus('自動ログインに失敗：'+e.message+'。メニュー → 共有・同期から再ログインしてください。',true)})}}
+function initCloudForm(){drawRoster();$('cloudUrl').value=cloudCfg.url||'';$('cloudKey').value=cloudCfg.key||'';$('cloudTeam').value=cloudCfg.team||'';cloudStatus('端末内モード。共有機能を使うには設定とログインが必要です。');try{cloudSession=JSON.parse(localStorage.getItem('glink-cloud-session')||'null')}catch{cloudSession=null}if(cloudSession&&cloudValid()){cloudStatus('ログイン情報を確認しています…');loadRole().then(()=>cloudDownload(true)).catch(e=>{console.error('GLINK auto sign-in',e);cloudStatus('自動ログインを確認できません：'+e.message+'。ネット接続を確認して「再接続」を押してください。',true)})}}
 $('cloudSaveConfig').onclick=()=>{const url=$('cloudUrl').value.trim().replace(/\/$/,''),key=$('cloudKey').value.trim(),team=$('cloudTeam').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)||!key||!/^[0-9a-f-]{36}$/i.test(team))return alert('URL・公開キー・UUIDを確認してください');if(/^sb_secret_|^service_role/i.test(key))return alert('秘密鍵は登録しないでください');cloudCfg={url,key,team};activeRole=null;updateRoleUI();localStorage.setItem(CLOUD_KEY,JSON.stringify(cloudCfg));cloudReady=false;cloudRevision=null;cloudStatus('接続情報を保存しました。ログインしてください。')};
-$('cloudSignin').onclick=async()=>{try{if(!cloudValid())throw Error('先に接続設定を保存してください');const r=await fetch(cloudCfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:$('cloudEmail').value.trim(),password:$('cloudPass').value})});const v=await r.json();if(!r.ok)throw Error(v.error_description||v.msg||'認証できません');cloudSession={...v,expires_at:Math.floor(Date.now()/1000)+(v.expires_in||3600)};localStorage.setItem('glink-cloud-session',JSON.stringify(cloudSession));$('cloudPass').value='';cloudReady=false;cloudDirty=false;cloudStatus('認証成功。店舗権限と同期を確認しています…');try{await loadRole();await cloudDownload(true)}catch(syncError){cloudStatus('認証は成功しましたが同期に失敗：'+syncError.message,true)}}catch(e){cloudStatus('認証エラー：'+e.message,true)}};
+$('cloudRetry').onclick=async()=>{if(!cloudSession)return alert('先にログインしてください');const b=$('cloudRetry');b.disabled=true;try{cloudStatus('再接続中…');await loadRole();await cloudDownload(true);if(cloudReady)cloudStatus('再接続しました（TEAM SYNC）')}catch(e){cloudStatus('再接続エラー：'+e.message,true)}finally{b.disabled=false}};
+$('cloudSignin').onclick=async()=>{try{if(!cloudValid())throw Error('先に接続設定を保存してください');const r=await fetch(cloudCfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:$('cloudEmail').value.trim(),password:$('cloudPass').value})});const v=await r.json();if(!r.ok)throw Error(v.error_description||v.msg||'認証できません');storeCloudSession(v);$('cloudPass').value='';cloudReady=false;cloudDirty=false;cloudStatus('認証成功。店舗権限と同期を確認しています…');try{await loadRole();await cloudDownload(true)}catch(syncError){cloudStatus('認証は成功しましたが同期に失敗：'+syncError.message,true)}}catch(e){cloudStatus('認証エラー：'+e.message,true)}};
 $('cloudDownload').onclick=async()=>{try{if(!confirm('この端末のデータをクラウド最新版で置き換えます。先にバックアップしてください。続けますか？'))return;await cloudDownload()}catch(e){cloudStatus(e.message,true)}};
 $('cloudRefresh').onclick=async()=>{try{await cloudDownload()}catch(e){cloudStatus(e.message,true)}};
 $('cloudUpload').onclick=async()=>{try{if(activeRole!=='admin')throw Error('管理者のみ操作できます');if(!cloudSession)throw Error('ログインしてください');if(cloudDirty)throw Error('未送信の変更があります');const current=await readCloud();if(current.revision!==cloudRevision)throw Error('クラウドデータが更新されています。先に最新を読み込んでください');if(!confirm('【管理者専用】現在のクラウドデータを端末の内容で置き換えます。バックアップ済みですか？'))return;cloudReady=true;cloudDirty=true;await cloudCommit();if(!cloudDirty&&cloudReady)alert('クラウドに保存しました')}catch(e){cloudStatus(e.message,true)}};
