@@ -802,7 +802,7 @@ function drawReportImage(){
   if(detail){rect(x+12,y+h-42,w-24,31,14,'#e6f3ff');c.fillStyle=color;c.font='bold 20px sans-serif';text(detail,x+21,y+h-19,w-36)}
  }
  // Rotate between three verified collision-free metric layouts. The hero remains on the right.
- const posterMode=Math.abs((activityAiVersion||0)+(palette.layout||0))%3;
+ const posterMode=activityAiDesign&&[0,1,2].includes(activityAiDesign.layout)?activityAiDesign.layout:Math.abs((activityAiVersion||0)+(palette.layout||0))%3;
  const arrangements=[
  [[20,227,258,166],[291,242,252,153],[22,408,253,163],[290,416,251,153],[20,583,292,174],[326,593,215,161]],
  [[20,228,283,169],[319,228,223,154],[20,412,230,152],[267,397,275,171],[20,585,267,170],[301,584,241,171]],
