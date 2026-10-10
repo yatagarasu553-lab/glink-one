@@ -1,0 +1,17 @@
+{
+  "name": "GLINK ONE",
+  "short_name": "GLINK ONE",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#10102c",
+  "theme_color": "#181054",
+  "icons": [
+    {
+      "src": "app-icon.jpg",
+      "sizes": "96x96",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
