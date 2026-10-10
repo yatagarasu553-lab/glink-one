@@ -816,7 +816,10 @@ function drawReportImage(){
   c.strokeStyle=color;c.lineWidth=emphasis?4:2;c.strokeRect(x+2,y+2,w-4,h-4);
   brush(x-1,y,w+2,50,color,emphasis?-.03:.018);
   c.fillStyle='#fff';c.font='900 '+(emphasis?28:25)+'px sans-serif';text(label,x+14,y+34,w-28);
-  c.fillStyle='#081d3c';c.font='900 '+(emphasis?72:55)+'px sans-serif';text(value,x+16,y+114,w-26);
+  c.fillStyle='#081d3c';
+  let valueFont=emphasis?72:55;
+  while(valueFont>24){c.font='900 '+valueFont+'px sans-serif';if(c.measureText(value).width<=w-32)break;valueFont-=2}
+  c.font='900 '+valueFont+'px sans-serif';text(value,x+16,y+Math.min(h-30,113),w-32);
   if(detail){rect(x+12,y+h-42,w-24,31,14,'#e6f3ff');c.fillStyle=color;c.font='bold 20px sans-serif';text(detail,x+21,y+h-19,w-36)}
  }
  // Rotate between three verified collision-free metric layouts. The hero remains on the right.
@@ -828,11 +831,11 @@ function drawReportImage(){
  // Three structurally distinct, validated compositions in the reserved left information column.
  // Unlike simple offsets, these vary hierarchy, widths and conversion prominence.
  const arrangements=[
-  [[20,220,238,159],[270,220,238,159],[20,391,238,159],[270,391,238,159],[20,563,488,185]],
-  [[20,220,488,157],[20,390,238,157],[270,390,238,157],[20,560,238,190],[270,560,238,190]],
-  [[20,220,238,157],[270,220,238,157],[20,390,488,156],[20,560,238,190],[270,560,238,190]]
+  [[20,220,238,158],[270,220,238,158],[20,390,238,158],[270,390,238,158],[20,562,488,188]],
+  [[20,220,218,158],[250,220,258,158],[20,390,258,158],[290,390,218,158],[20,562,488,188]],
+  [[20,220,260,158],[292,220,216,158],[20,390,216,158],[248,390,260,158],[20,562,488,188]]
  ];
- const main=colors[1],secondary=colors[2],conversion=aiVisualStyle==='luxury'?'#a37826':aiVisualStyle==='pop'?'#d82e68':'#0799b4';
+  const main=colors[1],secondary=colors[2],conversion=aiVisualStyle==='luxury'?'#a37826':aiVisualStyle==='pop'?'#d82e68':'#0799b4';
  const tiles=[
   [main,'キャッチ母数',n.catchCount+'件','本日のアプローチ',false],
   [main,'足止め数',n.stopCount+'件','足止め率 '+rate(n.stopCount,n.catchCount),false],
@@ -894,13 +897,12 @@ function drawReportImage(){
  brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
  const items=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
  items.forEach(([label,num],i)=>{
-  const col=posterMode===2?i%2:i%3,row=posterMode===2?Math.floor(i/2):Math.floor(i/3);
-  const width=posterMode===2?318:posterMode===1?223:217;
-  const x=20+col*(posterMode===2?344:232),y=posterMode===2?853+row*77:869+row*112;
-  const h=posterMode===2?67:97,color=[main,main,secondary,secondary,conversion,conversion][i];
-  c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,width,h,12,'#fafffff2');c.restore();brush(x,y,width,posterMode===2?29:36,color,i%2?-.02:.02);
-  c.fillStyle='#fff';c.font='bold 21px sans-serif';text(label,x+12,y+(posterMode===2?22:26),width-19);
-  c.fillStyle='#091c3b';c.font='900 '+(posterMode===2?31:42)+'px sans-serif';text(num+'件',x+15,y+(posterMode===2?57:81),width-25);
+  const col=i%3,row=Math.floor(i/3);
+  const width=206,x=20+col*219,y=869+row*112;
+  const h=97,color=[main,main,secondary,secondary,conversion,conversion][i];
+  c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,width,h,12,'#fafffff2');c.restore();brush(x,y,width,36,color,i%2?-.02:.02);
+  c.fillStyle='#fff';c.font='bold 21px sans-serif';text(label,x+12,y+26,width-19);
+  c.fillStyle='#091c3b';let fs=42;while(fs>23){c.font='900 '+fs+'px sans-serif';if(c.measureText(num+'件').width<=width-25)break;fs-=2}text(num+'件',x+15,y+81,width-25);
  });
  // Unified lower canvas panel hides occasional bright artifacts from AI backgrounds
  // without adding white blocks; applies before all reflection text.
