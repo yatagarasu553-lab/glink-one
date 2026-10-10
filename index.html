@@ -787,7 +787,7 @@ function drawReportImage(){
  for(const mw of memoWidths){
   for(const fontSize of [26,24,22,20]){
    c.font=fontSize+'px sans-serif';let lines=[],line='';
-   for(const ch of memo){if(ch==='\\n'){lines.push(line);line='';continue}if(line&&c.measureText(line+ch).width>mw-42){lines.push(line);line=''}line+=ch}
+   for(const ch of memo){if(ch==='\n'){lines.push(line);line='';continue}if(line&&c.measureText(line+ch).width>mw-42){lines.push(line);line=''}line+=ch}
    lines.push(line);
    const height=Math.max(78,25+lines.length*(fontSize+10));
    if(height<=220||mw===1030&&fontSize===20){memoSpec={width:mw,height,lines,fontSize};break}
