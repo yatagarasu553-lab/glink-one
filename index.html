@@ -691,13 +691,46 @@ const priorNavigate=navigate;navigate=function(page){priorNavigate(page);if(page
 const priorRender=render;render=function(){try{priorRender()}finally{try{if($('mypage').classList.contains('active'))renderMyPage();if($('staffGoals').classList.contains('active'))renderStaffGoals()}catch(e){console.error('GLINK feature screen',e)}}};
 
 function allNotices(){return Array.isArray(state.announcements)?state.announcements.filter(x=>x&&typeof x.id==='string'):[]}
-function readNoticeIds(){try{return JSON.parse(localStorage.getItem('glink-read-notices-'+(cloudSession?.user?.id||'guest'))||'[]')}catch{return []}}
-function markNoticeRead(id){const ids=readNoticeIds();if(!ids.includes(id)){ids.push(id);try{localStorage.setItem('glink-read-notices-'+(cloudSession?.user?.id||'guest'),JSON.stringify(ids))}catch{}}renderNotices()}
+let cloudNoticeReads=[],cloudNoticeReadsReady=false,noticeReadLoading=null;
+function readNoticeIds(){
+ if(cloudSession&&cloudNoticeReadsReady)return cloudNoticeReads.filter(x=>x.user_id===cloudSession.user.id).map(x=>x.notice_id);
+ if(cloudSession)return [];
+ try{const a=JSON.parse(localStorage.getItem('glink-read-notices-guest')||'[]');return Array.isArray(a)?a:[]}catch{return []}
+}
+async function fetchNoticeReads(){
+ if(!cloudReady||!cloudSession){cloudNoticeReadsReady=false;cloudNoticeReads=[];renderNotices();return}
+ if(noticeReadLoading)return noticeReadLoading;
+ noticeReadLoading=(async()=>{
+  const url='/rest/v1/announcement_reads?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=notice_id,user_id,read_at&limit=10000';
+  const list=await authorized(()=>cloudFetch(url));
+  cloudNoticeReads=Array.isArray(list)?list:[];cloudNoticeReadsReady=true;renderNotices();
+ })();
+ try{await noticeReadLoading}catch(e){cloudNoticeReadsReady=false;console.error('GLINK read receipts',e);const hint=$('noticeReceiptStatus');if(hint)hint.textContent='既読同期の取得に失敗しました：'+e.message}finally{noticeReadLoading=null}
+}
+async function markNoticeRead(id){
+ if(!allNotices().some(n=>n.id===id))return alert('お知らせが見つかりません');
+ if(!cloudReady||!cloudSession)return alert('TEAM SYNCにログインしてから既読にしてください');
+ if(readNoticeIds().includes(id))return;
+ try{
+  await authorized(()=>cloudFetch('/rest/v1/announcement_reads',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({team_id:cloudCfg.team,notice_id:id,user_id:cloudSession.user.id})}));
+  cloudNoticeReads.push({notice_id:id,user_id:cloudSession.user.id,read_at:new Date().toISOString()});cloudNoticeReadsReady=true;renderNotices();
+ }catch(e){alert('既読の保存に失敗しました：'+e.message)}
+}
 function renderNotices(){
- const rows=allNotices().slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')),read=readNoticeIds();
- const cards=rows.map(x=>'<div class="entry"><div class="row"><b>'+escapeHtml(x.title||'無題')+'</b><span class="muted micro">'+(read.includes(x.id)?'既読':'● 未読')+'</span></div><p class="muted micro">'+escapeHtml((x.createdAt||'').slice(0,16).replace('T',' '))+' / '+escapeHtml(x.author||'管理者')+'</p><div style="white-space:pre-wrap">'+escapeHtml(x.body||'')+'</div><div class="flexwrap">'+(!read.includes(x.id)?'<button class="tinybtn" onclick="markNoticeRead('+JSON.stringify(x.id).replace(/"/g,'&quot;')+')">確認しました</button>':'')+(activeRole==='admin'?'<button class="tinybtn" onclick="deleteNotice('+JSON.stringify(x.id).replace(/"/g,'&quot;')+')">削除</button>':'')+'</div></div>').join('');
+ const rows=allNotices().slice().sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||'')),read=readNoticeIds(),members=state.staff;
+ const cards=rows.map(x=>{
+ const receipts=cloudNoticeReads.filter(y=>y.notice_id===x.id);
+ const names=receipts.map(y=>teamReadMembers.find(m=>m.user_id===y.user_id)?.staff_name).filter(Boolean);
+ const adminHtml=activeRole==='admin'?'<div class="muted micro">確認済み '+names.length+' / '+members.length+'名'+(cloudNoticeReadsReady?'':'（クラウド確認中）')+'</div><details><summary>スタッフ別の確認状況</summary>'+members.map(n=>'<div class="micro">'+(names.includes(n)?'✅ ':'○ ')+escapeHtml(n)+'</div>').join('')+'</details>':'';
+ return '<div class="entry"><div class="row"><b>'+escapeHtml(x.title||'無題')+'</b><span class="muted micro">'+(read.includes(x.id)?'既読':'● 未読')+'</span></div><p class="muted micro">'+escapeHtml((x.createdAt||'').slice(0,16).replace('T',' '))+' / '+escapeHtml(x.author||'管理者')+'</p><div style="white-space:pre-wrap">'+escapeHtml(x.body||'')+'</div>'+adminHtml+'<div class="flexwrap">'+(!read.includes(x.id)?'<button class="tinybtn" onclick="markNoticeRead('+JSON.stringify(x.id).replace(/"/g,'&quot;')+')">確認しました</button>':'')+(activeRole==='admin'?'<button class="tinybtn" onclick="deleteNotice('+JSON.stringify(x.id).replace(/"/g,'&quot;')+')">削除</button>':'')+'</div></div>';
+ }).join('');
  $('noticeList').innerHTML=cards||'<p class="muted">お知らせはまだありません。</p>';
  $('homeAnnouncementPreview').innerHTML=rows.length?'<b>'+escapeHtml(rows[0].title||'無題')+'</b><p class="muted micro">'+escapeHtml((rows[0].body||'').slice(0,90))+'</p><span class="muted micro">未読 '+rows.filter(x=>!read.includes(x.id)).length+'件</span>':'<p class="muted micro">新しいお知らせはありません。</p>';
+}
+let teamReadMembers=[];
+async function loadNoticeMembers(){
+ if(activeRole!=='admin'||!cloudReady)return;
+ try{const list=await authorized(()=>cloudFetch('/rest/v1/team_members?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=user_id,staff_name'));teamReadMembers=Array.isArray(list)?list:[];renderNotices()}catch(e){console.error('GLINK notice member names',e)}
 }
 $('noticePublish').onclick=()=>{
  if(activeRole!=='admin'||!cloudReady||cloudDirty||!cloudSession)return alert('管理者としてTEAM SYNCを完了してから投稿してください');
@@ -709,4 +742,7 @@ $('noticePublish').onclick=()=>{
 };
 function deleteNotice(id){if(activeRole!=='admin'||!cloudReady||cloudDirty||!confirm('このお知らせを削除しますか？'))return;state.announcements=allNotices().filter(x=>x.id!==id);persist();renderNotices()}
 const renderWithNotices=render;render=function(){try{renderWithNotices()}finally{try{renderNotices()}catch(e){console.error('GLINK announcement display',e)}}};
+const priorNavigateNotices=navigate;navigate=function(page){priorNavigateNotices(page);if(page==='announcements'){fetchNoticeReads();loadNoticeMembers()}};
+const priorLoadNotices=loadStaffSubmissions;loadStaffSubmissions=async function(){await priorLoadNotices();await fetchNoticeReads();await loadNoticeMembers()};
+
 </script></body></html>
