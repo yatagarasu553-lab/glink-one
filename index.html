@@ -822,7 +822,35 @@ function drawReportImage(){
  [colors[0],'成約数',n.won+'組','',true],
  [colors[4],'成約率',rate(n.won,n.talkCount),'',true]
  ];
- arrangements[posterMode].forEach((p,i)=>card(...p,...tiles[i]));
+ // Score safe candidate layouts against the generated illustration, preserving accurate canvas-rendered numbers.
+ function chooseImageAwareTiles(){
+  if(!hasArt)return arrangements[posterMode];
+  try{
+   const sample=document.createElement('canvas');sample.width=108;sample.height=135;
+   const sc=sample.getContext('2d',{willReadFrequently:true});
+   sc.drawImage(cv,0,0,108,135);
+   const pixels=sc.getImageData(0,0,108,135).data;
+   const salience=(x,y)=>{
+    const px=Math.max(1,Math.min(106,Math.round(x/10))),py=Math.max(1,Math.min(133,Math.round(y/10)));
+    const o=(a,b)=>(b*108+a)*4,k=o(px,py),a=o(px+1,py),b=o(px,py+1);
+    const r=pixels[k],g=pixels[k+1],bl=pixels[k+2];
+    const edge=(Math.abs(r-pixels[a])+Math.abs(g-pixels[a+1])+Math.abs(bl-pixels[a+2])+Math.abs(r-pixels[b])+Math.abs(g-pixels[b+1])+Math.abs(bl-pixels[b+2]))/765;
+    const skin=r>75&&g>40&&bl>25&&r>g*1.12&&g>bl*.88&&Math.max(r,g,bl)-Math.min(r,g,bl)>24;
+    return edge*2.8+(skin?1.4:0);
+   };
+   const candidates=[];
+   for(let mode=0;mode<3;mode++)for(const dx of [-8,0,8])for(const dy of [-6,0,6]){
+    const cards=arrangements[mode].map(([x,y,w,h])=>[x+dx,y+dy,w,h]);
+    let score=0;
+    for(const [x,y,w,h] of cards)for(let py=y+24;py<y+h-10;py+=36)for(let px=x+18;px<x+w-10;px+=38)score+=salience(px,py);
+    score+=mode===posterMode?0:.16;
+    candidates.push({cards,score});
+   }
+   candidates.sort((a,b)=>a.score-b.score);
+   return candidates[0].cards;
+  }catch(e){console.warn('GLINK image composition fallback',e);return arrangements[posterMode]}
+ }
+ chooseImageAwareTiles().forEach((p,i)=>card(...p,...tiles[i]));
  brush(693,704,354,105,'#ffe323',-.14);c.save();c.translate(722,755);c.rotate(-.14);c.fillStyle='#0c2451';c.font='900 33px sans-serif';text('今日も全力で!!',0,0,295);c.restore();
  brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
  const items=[['SB対外',n.sb],['YM対外',n.ym],['機変',n.device],['YS',n.ys],['ADC',n.adc],['あんスマ',n.insurance]];
