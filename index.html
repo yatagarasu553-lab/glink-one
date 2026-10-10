@@ -781,6 +781,8 @@ function drawReportImage(){
  const cv=$('imgCanvas'),c=cv.getContext('2d');if(!c)return;
  const n=imageNumbers(),date=$('imgDate').value||nowDay(),staff=$('imgStaff').value||loggedStaffName||'スタッフ',hasArt=!!(activityAiImage?.complete&&activityAiImage?.naturalWidth);
  const palette=reportPalette(),colors=palette.accents,W=1080,H=1350;
+ const families={pop:['#ed3268','#1676e8','#08a889','#ed9417','#7947d2','#00a1b4'],futuristic:['#116fe0','#4f4bd1','#08aac2','#785bd5','#0ca5d5','#325aa3'],luxury:['#967120','#ab853e','#80604f','#b59554','#725b6e','#5c707a'],bright:['#e82e6a','#1683e3','#0cab7b','#ee9b12','#744cce','#0b9eb8']};
+ if(activityAiDesign&&families[activityAiDesign.style]){families[activityAiDesign.style].forEach((v,i)=>colors[i]=v);if(/^#[0-9a-fA-F]{6}$/.test(activityAiDesign.accent||''))colors[0]=activityAiDesign.accent;}
  const bg=c.createLinearGradient(0,0,W,H);bg.addColorStop(0,'#29a9ff');bg.addColorStop(1,'#0b58c1');c.fillStyle=bg;c.fillRect(0,0,W,H);
  if(hasArt){const im=activityAiImage,scale=Math.max(W/im.naturalWidth,H/im.naturalHeight);c.drawImage(im,(W-im.naturalWidth*scale)/2,(H-im.naturalHeight*scale)/2,im.naturalWidth*scale,im.naturalHeight*scale)}
  const rate=(a,b)=>b>0?Math.round(a/b*100)+'%':'0%';
