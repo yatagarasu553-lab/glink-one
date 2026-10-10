@@ -886,7 +886,8 @@ async function createActivityAi(force=false){
    });
    activityAiCache.set(cacheKey,src);
   }
-  const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('AI画像を読み込めませんでした'));image.src=src});
+  const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=()=>reject(Error('AI画像を読み込めませんでした'));image.src=typeof src==='string'?src:src.image});
+  activityAiDesign=typeof src==='string'?null:src.design;
   activityAiImage=image;$('imgTheme').value='cool';drawReportImage();
   status.textContent='AIイラストと今日の実績を合成しました。PNG保存・共有できます。';
  }catch(e){status.textContent='AI画像生成を利用できません：'+e.message+'（従来テンプレは引き続き使えます）'}
