@@ -79,7 +79,7 @@ $('dealFilterClear').onclick=()=>{for(const id of ['dealFilterDate','dealFilterT
 function showDealSaved(o){$('dealSavedDetails').textContent=o.date+' ／ '+o.staff+' ／ '+o.carrier+' '+o.type+' ／ '+o.deals+'件 ／ 売上 '+yen(o.sales)+' ／ ADC '+o.adc+'件 ／ あんスマ '+o.insurance+'件。保存済みです。';$('dealSavedOverlay').hidden=false;document.body.style.overflow='hidden'}
 $('dealSavedClose').onclick=()=>{$('dealSavedOverlay').hidden=true;document.body.style.overflow=''};
 $('dealSavedNext').onclick=()=>{$('dealSavedClose').click();$('dealForm').scrollIntoView({behavior:'smooth',block:'start'})};
-const newId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(36).slice(2);function syncDealCounts(){ $('deals').value=(number($('catchDeals').value)+number($('closeDeals').value))*0.5 };$('catchDeals').addEventListener('input',syncDealCounts);$('closeDeals').addEventListener('input',syncDealCounts);$('dealForm').onsubmit=async e=>{e.preventDefault();if(!state.staff.length)return alert('先にメンバーを登録してください');const o={id:newId(),date:$('date').value,staff:$('staff').value,carrier:$('carrier').value,type:$('dealType').value,catchDeals:number($('catchDeals').value),closeDeals:number($('closeDeals').value),deals:number($('deals').value),sales:number($('sales').value),adc:number($('adc').value),insurance:number($('insurance').value),memo:$('memo').value,storeInclusion:$('storeInclusion').value};if((o.catchDeals+o.closeDeals)*0.5!==o.deals||o.deals===0||!Number.isSafeInteger(o.catchDeals)||!Number.isSafeInteger(o.closeDeals)||o.catchDeals<0||o.closeDeals<0||!Number.isInteger(o.deals*2)||o.deals<0||o.deals>100||!Number.isSafeInteger(o.sales)||o.sales<0||!Number.isSafeInteger(o.adc)||o.adc<0||o.adc>100||!Number.isSafeInteger(o.insurance)||o.insurance<0||o.insurance>100)return alert('入力値を確認してください');const existingDeals=[...state.entries,...(cloudSession?submittedRecords.filter(x=>x.kind==='deal').map(x=>x.payload):[])].filter(x=>x.staff===o.staff&&x.date===o.date&&x.carrier===o.carrier&&x.type===o.type&&!x.monthOnly);
+const newId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(36).slice(2);function syncDealCounts(){ $('deals').value=(number($('catchDeals').value)+number($('closeDeals').value))*0.5 };$('staff').addEventListener('change',()=>{if($('staff').value==='その他（外注など）')$('storeInclusion').value='extra'});$('catchDeals').addEventListener('input',syncDealCounts);$('closeDeals').addEventListener('input',syncDealCounts);$('dealForm').onsubmit=async e=>{e.preventDefault();if(!state.staff.length)return alert('先にメンバーを登録してください');const o={id:newId(),date:$('date').value,staff:$('staff').value,carrier:$('carrier').value,type:$('dealType').value,catchDeals:number($('catchDeals').value),closeDeals:number($('closeDeals').value),deals:number($('deals').value),sales:number($('sales').value),adc:number($('adc').value),insurance:number($('insurance').value),memo:$('memo').value,storeInclusion:$('storeInclusion').value};if((o.catchDeals+o.closeDeals)*0.5!==o.deals||o.deals===0||!Number.isSafeInteger(o.catchDeals)||!Number.isSafeInteger(o.closeDeals)||o.catchDeals<0||o.closeDeals<0||!Number.isInteger(o.deals*2)||o.deals<0||o.deals>100||!Number.isSafeInteger(o.sales)||o.sales<0||!Number.isSafeInteger(o.adc)||o.adc<0||o.adc>100||!Number.isSafeInteger(o.insurance)||o.insurance<0||o.insurance>100)return alert('入力値を確認してください');const existingDeals=[...state.entries,...(cloudSession?submittedRecords.filter(x=>x.kind==='deal').map(x=>x.payload):[])].filter(x=>x.staff===o.staff&&x.date===o.date&&x.carrier===o.carrier&&x.type===o.type&&!x.monthOnly);
  const exact=existingDeals.some(x=>Number(x.catchDeals)===o.catchDeals&&Number(x.closeDeals)===o.closeDeals&&Number(x.sales)===o.sales&&Number(x.adc)===o.adc&&Number(x.insurance)===o.insurance);
  if(exact&&!confirm('【重複確認】同じ担当者・日付・区分・件数・売上・付帯の実績があります。別案件であることを確認して登録しますか？'))return;
  const warnings=[];
@@ -496,7 +496,7 @@ function individualDayActual(date){
 function combinedDayActual(date){
  const out=dailyStoreActual(date),records=[...state.entries,...(cloudSession?submittedRecords.filter(r=>r.kind==='deal').map(r=>r.payload):[])].filter(e=>e.date===date&&!e.monthOnly&&!e.legacyMonthly);
  const inc={external:0,device:0,ys:0,adc:0,insurance:0},extra={...inc};
- for(const e of records){const n=weightedDeals(e),target=e.storeInclusion==='extra'?extra:inc;
+ for(const e of records){const n=Number(weightedDeals(e))||0,outsourced=e.staff==='その他（外注など）',target=(outsourced||e.storeInclusion==='extra')?extra:inc;
   if(e.type==='対外')target.external+=n;
   if(e.type==='機変')target.device+=n;
   if(e.type==='YS')target.ys+=n;
@@ -518,7 +518,7 @@ function dailyStoreActual(date){
 function renderDailyGoals(){
  const date=nowDay(),goals=state.dailyTargets?.[date]||{},actual=combinedDayActual(date);
  const configured=DAILY_GOAL_KEYS.filter(([k])=>goals[k]!==null&&goals[k]!==undefined);
- $('dailyGoalView').innerHTML='<p class="muted micro">'+escapeHtml(date)+' ・ 店舗報告を優先し、未反映の別案件のみ追加</p>'+
+ $('dailyGoalView').innerHTML='<p class="muted micro">'+escapeHtml(date)+' ・ キャッチ・クローズ各0.5件、ADC・あんスマ各1件。外注案件は追加計上</p>'+
  configured.map(([k,title])=>{
   const goal=goals[k],n=actual[k],known=n!==undefined;
   const pct=known&&goal>0?Math.round(n/goal*100):null;
