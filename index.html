@@ -1124,5 +1124,81 @@ $('printDocUpload').onclick=async()=>{
 };
 const navigateBeforePrintDocs=navigate;navigate=function(page){navigateBeforePrintDocs(page);if(page==='printDocs')printDocLoad()};
 
-/* CB calculator initialization inserted below */
+
+let cbKd='NONE',cbExtraRules=[],cbRulesLoaded=false;
+const cbNum=x=>Math.max(0,Number(x)||0),cbYen=x=>Math.round(x).toLocaleString('ja-JP')+'円';
+function cbCompute(){
+ const date=$('cbDate').value,carrier=$('cbCarrier').value,type=$('cbType').value,source=$('cbSource').value,lines=Math.min(20,Math.max(1,Math.floor(cbNum($('cbLines').value)||1)));
+ const sim=$('cbDevice').value==='SIM',plan=$('cbPlan').value,option=$('cbData').value==='yes',age=$('cbAge').value,payment=$('cbPayment').value,users=$('cbUsers').value;
+ const validOct=date>='2026-10-01'&&date<='2026-10-31',warnings=[],rows=[],add=(name,value,kind='prepaid')=>{if(value>0)rows.push({name,value,kind})};
+ let eligibleLines=lines;
+ if(lines>1&&users==='same'){eligibleLines=1;warnings.push('同一使用者の複数回線は施策により2回線目以降対象外となるため、基本特典を1回線分で試算しています。')}
+ if(lines>1&&users==='unknown'){eligibleLines=1;warnings.push('複数回線の使用者が未確認です。基本特典は1回線分のみ参考表示します。')}
+ if(type==='MOVE'||type==='DEVICE'){warnings.push('番号移行・機種変更の基本CBは現在対象外です。');}
+ else if(!validOct)warnings.push('10月の基本CB資料の対象期間外です。基本CBは計算していません。');
+ else if(!sim)warnings.push('提供された基本CB資料はSIM単体用です。端末セットの基本CBは未登録です。');
+ else if(carrier==='YM'){
+  if(type==='MNP'){
+   if(['SB','YM'].includes(source)){warnings.push('他社MNPの対象移転元を確認してください。')}
+   else {add('YM SIM MNP基本',eligibleLines*(option?15000:5000));
+    if(source==='RAKUTEN'&&option&&$('cbRakutenDealer').checked)add('楽天MNP上乗せ',eligibleLines*5000);
+    else if(source==='RAKUTEN')warnings.push('楽天上乗せは増量オプション・対象代理店の確認が必要です。')}
+  }else if(type==='NEW'){
+   if(payment!=='card')warnings.push('YM純新規CBはクレジットカード払い限定です。');
+   else if(age==='U18')add('YM U18純新規',eligibleLines*(plan==='S'||!option?5000:10000));
+   else if(age==='O19')add('YM O19純新規',eligibleLines*(option?5000:0));
+   else warnings.push('純新規の使用者区分が不明です。');
+  }
+  if(plan==='OTHER')warnings.push('対象プランを確認してください（SIM基本還元の判定が暫定です）。');
+ }else if(carrier==='SB'){
+  if(type==='MNP'||type==='NEW'){
+   if(type==='NEW'&&age!=='U18')warnings.push('SB純新規の基本CBはU18対象のみです。');
+   else if(plan==='OTHER'||plan==='S')warnings.push('SB基本CBの対象プランを選んでください。');
+   else add('SB USIM '+(type==='MNP'?'MNP':'U18純新規'),eligibleLines*15000);
+  }
+ }
+ let appliance=0;
+ if(cbKd==='KD20'){appliance=22000;warnings.push('KD20：光の月額料金割引あり（割引額は合計に含めません）。')}
+ else if(cbKd==='KD30')appliance=33000;
+ else if(cbKd==='AIR'){if(cbNum($('cbAppliance').value)>=33000)appliance=55000;else warnings.push('Air KD30：33,000円以上の商品購入が必要です。家電特典を合計に含めていません。')}
+ if(appliance)add('家電分（'+(cbKd==='AIR'?'Air KD30':cbKd)+'）',appliance,'appliance');
+ if(carrier==='YM'&&cbKd!=='NONE'&&cbKd!=='AIR'&&date>='2026-10-09'&&plan==='M'){
+  if($('cbHikariApply').checked){
+   if($('cbFixedStatus').value==='new')add('YM 光セット（新規固定）',15000,'prepaid');
+   else if($('cbFixedStatus').value==='existing')add('YM 光セット（既存固定）',15000,'points');
+   else warnings.push('光セットの固定回線が新規か既存か確認してください。');
+  }else warnings.push('YM光セット還元は申込条件・対象店舗等の確認後に反映します。');
+ }
+ if(carrier==='YM'&&cbKd==='AIR')warnings.push('YM光セットのAir適用条件は提供資料だけでは未確定のため追加還元を計算していません。');
+ if(carrier==='SB'&&cbKd!=='NONE'&&date>='2026-10-02'&&date<='2026-10-19')warnings.push('SBおうち割施策5,000円（税抜）は税・併用・適用条件の確認が必要なため自動加算していません。');
+ const matching=cbExtraRules.filter(r=>date>=r.starts_on&&date<=r.ends_on&&(r.carrier==='ALL'||r.carrier===carrier)&&(r.contract_type==='ALL'||r.contract_type===type)&&(r.source_carrier==='ALL'||r.source_carrier===source));
+ for(const rule of matching){if(rule.requirement?.trim())warnings.push('追加施策「'+rule.title+'」：'+rule.requirement+'（未加算）');else add('追加：'+rule.title,eligibleLines*Number(rule.amount))}
+ const subtotal=rows.filter(r=>r.kind!=='points').reduce((n,r)=>n+r.value,0),goods=rows.filter(r=>r.kind==='appliance').reduce((n,r)=>n+r.value,0),points=rows.filter(r=>r.kind==='points').reduce((n,r)=>n+r.value,0);
+ $('cbTotal').textContent=cbYen(subtotal);$('cbBreakdownShort').textContent='うち家電分 '+cbYen(goods)+(points?' ／ 別途PayPayポイント '+cbYen(points):'');
+ $('cbBreakdown').innerHTML=rows.length?rows.map(r=>'<div class="cb-row"><span>'+escapeHtml(r.name)+(r.kind==='points'?'（PayPay）':'')+'</span><span>'+cbYen(r.value)+'</span></div>').join(''):'<p class="muted">条件に一致した特典がありません。</p>';
+ $('cbWarnings').hidden=!warnings.length;$('cbWarnings').innerHTML=warnings.map(w=>'・'+escapeHtml(w)).join('<br>');
+}
+function cbRenderRules(){
+ const admin=!!cloudSession&&activeRole==='admin';$('cbAdmin').hidden=!admin;
+ $('cbRuleList').innerHTML=cbExtraRules.length?cbExtraRules.map(r=>'<div class="cb-row"><span>'+escapeHtml(r.title)+'<div class="muted micro">'+escapeHtml(r.starts_on)+'〜'+escapeHtml(r.ends_on)+' ／ '+escapeHtml(r.requirement||'条件なし')+'</div></span><span>'+cbYen(r.amount)+(admin?' <button type="button" class="tinybtn" data-cb-remove="'+escapeHtml(r.id)+'">削除</button>':'')+'</span></div>').join(''):'<p class="muted micro">追加施策はまだありません。</p>';
+ $('cbRuleList').querySelectorAll('[data-cb-remove]').forEach(b=>b.onclick=async()=>{if(!admin||!confirm('追加施策を削除しますか？'))return;try{await authorized(()=>cloudFetch('/rest/v1/cb_extra_rules?id=eq.'+encodeURIComponent(b.dataset.cbRemove),{method:'DELETE',headers:{Prefer:'return=minimal'}}));await cbLoadRules()}catch(e){alert('削除に失敗しました：'+e.message)}});
+}
+async function cbLoadRules(){
+ cbRenderRules();if(!cloudSession||!cloudCfg.team){cbExtraRules=[];cbCompute();return}
+ try{const data=await authorized(()=>cloudFetch('/rest/v1/cb_extra_rules?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=*&order=starts_on.desc'));cbExtraRules=Array.isArray(data)?data:[];cbRulesLoaded=true}catch(e){console.warn('追加施策を読み込めませんでした',e);cbExtraRules=[];$('cbWarnings').hidden=false;$('cbWarnings').textContent='追加施策の読み込みに失敗しました。再度ログインして開き直してください。'}
+ cbRenderRules();cbCompute();
+}
+$('cbRuleSave').onclick=async()=>{
+ if(activeRole!=='admin'||!cloudSession)return alert('管理者としてログインしてください');
+ const title=$('cbRuleTitle').value.trim(),starts_on=$('cbRuleStart').value,ends_on=$('cbRuleEnd').value,amount=Number($('cbRuleAmount').value),requirement=$('cbRuleRequirement').value.trim();
+ if(!title||!starts_on||!ends_on||ends_on<starts_on||!Number.isSafeInteger(amount)||amount<0||amount>1000000)return alert('施策名・期間・金額を確認してください');
+ try{await authorized(()=>cloudFetch('/rest/v1/cb_extra_rules',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({team_id:cloudCfg.team,created_by:cloudSession.user.id,title,starts_on,ends_on,amount,requirement,carrier:$('cbRuleCarrier').value,contract_type:$('cbRuleType').value,source_carrier:$('cbRuleSource').value})}));$('cbRuleTitle').value='';$('cbRuleAmount').value='';$('cbRuleRequirement').value='';await cbLoadRules();alert('店舗の追加施策を登録しました')}catch(e){alert('登録に失敗しました：'+e.message)}
+};
+$('cbDate').value=nowDay();$('cbRuleStart').value=nowDay();$('cbRuleEnd').value=nowDay();
+document.querySelectorAll('#cbCalc input,#cbCalc select').forEach(x=>{if(x.id.startsWith('cbRule'))return;x.addEventListener('input',cbCompute);x.addEventListener('change',cbCompute)});
+document.querySelectorAll('[data-cb-kd]').forEach(b=>b.onclick=()=>{cbKd=b.dataset.cbKd;document.querySelectorAll('[data-cb-kd]').forEach(x=>x.classList.toggle('active',x===b));cbCompute()});
+document.querySelector('[data-cb-kd="NONE"]').classList.add('active');
+const cbNavigateOld=navigate;navigate=function(page){cbNavigateOld(page);if(page==='cbCalc'){cbLoadRules()}};
+cbCompute();
+
 </script></body></html>
