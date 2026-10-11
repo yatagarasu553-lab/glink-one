@@ -799,7 +799,7 @@ function drawReportImage(){
   }
   if(memoSpec)break;
  }
- const H=Math.max(1460,1276+memoSpec.height+90);
+ const H=Math.max(1560,1355+memoSpec.height+90);
  if(cv.width!==W||cv.height!==H){cv.width=W;cv.height=H;}
 
  const families={pop:['#ed3268','#1676e8','#08a889','#ed9417','#7947d2','#00a1b4'],futuristic:['#116fe0','#4f4bd1','#08aac2','#785bd5','#0ca5d5','#325aa3'],luxury:['#967120','#ab853e','#80604f','#b59554','#725b6e','#5c707a'],bright:['#e82e6a','#1683e3','#0cab7b','#ee9b12','#744cce','#0b9eb8']};
@@ -903,27 +903,41 @@ function drawReportImage(){
  positions.slice(0,4).forEach((p,i)=>card(...p,...tiles[selected[i]]));
  drawOutcomes(...positions[4]);
  brush(11,794,700,59,'#051947ed',-.018);c.fillStyle='#fff';c.font='900 29px sans-serif';text('個別実績  /  付帯獲得',31,835);
- const items=[['SB対外',n.sb,'件'],['YM対外',n.ym,'件'],['機変',n.device,'件'],['YS',n.ys,'件'],['ADC',n.adc,'件'],['あんスマ',n.insurance,'件'],['見込み作成',n.prospectCreated,'組'],['見込み戻り',n.prospectReturned,'組']];
+ const items=[['SB対外',n.sb,'件'],['YM対外',n.ym,'件'],['機変',n.device,'件'],['YS',n.ys,'件'],['ADC',n.adc,'件'],['あんスマ',n.insurance,'件']];
  items.forEach(([label,num,unit],i)=>{
-  const col=i%3,row=Math.floor(i/3);
-  const width=206,x=20+col*219,y=869+row*112;
-  const h=97,color=[main,main,secondary,secondary,conversion,conversion,secondary,conversion][i];
-  c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,width,h,12,'#fafffff2');c.restore();brush(x,y,width,36,color,i%2?-.02:.02);
+  const col=i%3,row=Math.floor(i/3),width=206,x=20+col*219,y=869+row*112,h=97;
+  const color=[main,main,secondary,secondary,conversion,conversion][i];
+  c.save();c.shadowColor='#071b4a66';c.shadowBlur=8;rect(x,y,width,h,12,'#fafffff2');c.restore();
+  brush(x,y,width,36,color,i%2?-.02:.02);
   c.fillStyle='#fff';c.font='bold 21px sans-serif';text(label,x+12,y+26,width-19);
-  c.fillStyle='#091c3b';let fs=42;while(fs>23){c.font='900 '+fs+'px sans-serif';if(c.measureText(num+unit).width<=width-25)break;fs-=2}text(num+unit,x+15,y+81,width-25);
+  c.fillStyle='#091c3b';let fs=42;while(fs>23){c.font='900 '+fs+'px sans-serif';if(c.measureText(num+unit).width<=width-25)break;fs-=2}
+  text(num+unit,x+15,y+81,width-25);
+ });
+ // Independent prospect results: one wide card, two measured number cells.
+ const px=20,py=1100,pw=642,ph=148;
+ c.save();c.shadowColor='#071b4a66';c.shadowBlur=10;c.shadowOffsetY=3;rect(px,py,pw,ph,14,'#fcfffff7');c.restore();
+ c.strokeStyle=secondary;c.lineWidth=2;c.strokeRect(px+2,py+2,pw-4,ph-4);
+ brush(px,py,pw,38,secondary,-.015);
+ c.fillStyle='#fff';c.font='900 23px sans-serif';text('見込み実績',px+15,py+27,pw-30);
+ c.fillStyle='#c5d8e8';c.fillRect(px+pw/2,py+52,2,ph-64);
+ [['見込み作成組数',n.prospectCreated],['見込み戻り組数',n.prospectReturned]].forEach(([label,value],i)=>{
+  const cx=px+17+i*pw/2,maxW=pw/2-34,v=String(value)+'組';
+  c.fillStyle='#254267';c.font='700 19px sans-serif';text(label,cx,py+72,maxW);
+  let fs=55;while(fs>22){c.font='900 '+fs+'px sans-serif';if(c.measureText(v).width<=maxW)break;fs-=2}
+  c.fillStyle='#0a2446';text(v,cx,py+126,maxW);
  });
  // Unified lower canvas panel hides occasional bright artifacts from AI backgrounds
  // without adding white blocks; applies before all reflection text.
- const footerShade=c.createLinearGradient(0,1197,0,H);
+ const footerShade=c.createLinearGradient(0,1255,0,H);
  footerShade.addColorStop(0,'rgba(4,24,59,0)');
  footerShade.addColorStop(.25,'rgba(4,24,59,.45)');
  footerShade.addColorStop(1,'rgba(4,24,59,.88)');
- c.fillStyle=footerShade;c.fillRect(0,1197,W,H-1197);
- brush(15,1214,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1258);
+ c.fillStyle=footerShade;c.fillRect(0,1255,W,H-1255);
+ brush(15,1293,760,60,'#062051f0',-.025);c.fillStyle='#fff';c.font='900 30px sans-serif';text('✎  今日の振り返り',38,1337);
  // Width and height follow the actual measured lines; background extends to fit every line.
- rect(20,1276,memoSpec.width,memoSpec.height,16,'#fffffff2');
+ rect(20,1355,memoSpec.width,memoSpec.height,16,'#fffffff2');
  c.fillStyle='#152b4e';c.font=memoSpec.fontSize+'px sans-serif';
- memoSpec.lines.forEach((entry,i)=>text(entry,39,1315+i*(memoSpec.fontSize+10),memoSpec.width-42));
+ memoSpec.lines.forEach((entry,i)=>text(entry,39,1394+i*(memoSpec.fontSize+10),memoSpec.width-42));
  brush(22,H-45,463,39,'#063365ca');c.fillStyle='#fff';c.font='bold 21px sans-serif';text('GLINK ONE  /  LINE WORKS 提出用',40,H-18);
 }
 function initImageMaker(){
