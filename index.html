@@ -20,7 +20,7 @@
 <div class="panel"><div class="sectiontitle">光回線・Air・家電特典</div><div class="cb-choice" id="cbKdButtons"><button type="button" data-cb-kd="NONE">契約なし</button><button type="button" data-cb-kd="KD20">光 KD20</button><button type="button" data-cb-kd="KD30">光 KD30</button><button type="button" data-cb-kd="AIR">SB Air KD30</button></div>
 <label>光回線の状況<select id="cbFixedStatus"><option value="new">新規固定回線の同時申込</option><option value="existing">既存固定回線あり</option><option value="unknown">未確認</option></select></label>
 <label>家電購入金額（Airの条件確認用）<input type="number" id="cbAppliance" min="0" step="1" placeholder="例：33000"></label>
-<label><input type="checkbox" id="cbHikariApply" style="width:auto;vertical-align:middle"> おうち割の申込条件・対象店舗を確認済み</label>
+<label><input type="checkbox" id="cbHikariApply" style="width:auto;vertical-align:middle"> おうち割の適用条件・対象店舗を確認済み（未チェックでも台数分を試算）</label>
 </div>
 <div class="panel"><div class="sectiontitle">計算結果</div><div class="metric" style="margin-bottom:12px"><span>プリペイド相当の試算（確認済み条件のみ）</span><strong id="cbTotal">— 円</strong><div class="muted micro" id="cbBreakdownShort"></div></div><div id="cbBreakdown" class="micro"></div><div id="cbWarnings" class="warn" style="margin-top:12px" hidden></div><p class="muted micro">※光・Airの家電値引きはプリペイド内訳として別掲。PayPayポイント特典はプリペイド合計に混ぜません。条件未確認時は確定金額として扱わないでください。</p></div>
 <div class="panel" id="cbAdmin" hidden><details><summary>＋ 管理者・日別追加施策の登録</summary><p class="muted micro">条件の異なる施策は個別に登録してください。登録したルールは店舗の全スタッフに共有されます。</p>
@@ -1162,12 +1162,15 @@ function cbCompute(){
  else if(cbKd==='KD30')appliance=33000;
  else if(cbKd==='AIR'){if(cbNum($('cbAppliance').value)>=33000)appliance=55000;else warnings.push('Air KD30：33,000円以上の商品購入が必要です。家電特典を合計に含めていません。')}
  if(appliance)add('家電分（'+(cbKd==='AIR'?'Air KD30':cbKd)+'）',appliance,'appliance');
- if(carrier==='YM'&&cbKd!=='NONE'&&cbKd!=='AIR'&&date>='2026-10-09'&&plan==='M'){
-  if($('cbHikariApply').checked){
-   if($('cbFixedStatus').value==='new')add('YM 光セット（新規固定）',15000,'prepaid');
-   else if($('cbFixedStatus').value==='existing')add('YM 光セット（既存固定）',15000,'points');
-   else warnings.push('光セットの固定回線が新規か既存か確認してください。');
-  }else warnings.push('YM光セット還元は申込条件・対象店舗等の確認後に反映します。');
+ if(carrier==='YM'&&(cbKd==='KD20'||cbKd==='KD30')&&date>='2026-10-09'&&date<='2026-10-31'&&plan==='M'&&(type==='MNP'||type==='NEW')){
+  // Simultaneous fixed-line application: calculate an Ouchi-wari application per mobile line.
+  // Multiple-use exclusions are still surfaced as a warning, rather than silently ignored.
+  const ouchiLines=lines;
+  if($('cbFixedStatus').value==='new')add('YM 光セット '+ouchiLines+'回線 × 15,000円（新規固定）',15000*ouchiLines,'prepaid');
+  else if($('cbFixedStatus').value==='existing')add('YM 光セット '+ouchiLines+'回線 × 15,000円（既存固定）',15000*ouchiLines,'points');
+  else warnings.push('光セットの固定回線が新規か既存か確認してください。');
+  if(lines>1&&users!=='different')warnings.push('おうち割は'+lines+'回線分の申込を前提に表示しています。同一使用者の複数契約等により、実際の還元対象数は減る可能性があります。');
+  if(!$('cbHikariApply').checked)warnings.push('おうち割の適用条件・対象店舗は未確認です。表示額は条件付きの見込みで、確定額ではありません。');
  }
  if(carrier==='YM'&&cbKd==='AIR')warnings.push('YM光セットのAir適用条件は提供資料だけでは未確定のため追加還元を計算していません。');
  if(carrier==='SB'&&cbKd!=='NONE'&&date>='2026-10-02'&&date<='2026-10-19')warnings.push('SBおうち割施策5,000円（税抜）は税・併用・適用条件の確認が必要なため自動加算していません。');
