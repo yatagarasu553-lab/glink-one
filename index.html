@@ -1297,13 +1297,32 @@ function printDocRender(){
  const sort=$('printDocSort').value;const matches=printDocs.filter(x=>(!filter||(x.category||'その他')===filter)&&(x.title+' '+x.category).toLowerCase().includes(q)).sort((a,b)=>sort==='name'?a.title.localeCompare(b.title,'ja'):sort==='category'?(a.category||'').localeCompare(b.category||'','ja'):String(b.created_at||'').localeCompare(String(a.created_at||'')));
  const items=matches.slice(0,printDocLimit),more=$('printDocShowMore');
  more.hidden=matches.length<=printDocLimit;more.textContent='さらに表示（残り'+(matches.length-printDocLimit)+'件）';
- $('printDocList').innerHTML=items.length?items.map(x=>'<div class="entry"><div class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><div class="muted micro">'+escapeHtml(x.category)+' ・ 登録 '+escapeHtml((x.created_at||'').slice(0,10)||'日付不明')+'</div></div><button type="button" class="tinybtn print-fav-toggle" data-print-favorite="'+escapeHtml(x.id)+'" aria-label="お気に入り切替">'+(favs.includes(x.id)?'★':'☆')+'</button><button type="button" class="btn" data-print-open="'+escapeHtml(x.id)+'">開く・印刷</button>'+(admin?'<button type="button" class="tinybtn" data-print-delete="'+escapeHtml(x.id)+'">削除</button>':'')+'</div>').join(''):'<p class="notice">該当する書類がありません。検索や分類を変更してください。</p>';
+ $('printDocList').innerHTML=items.length?items.map(x=>'<div class="entry"><div class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><div class="muted micro">'+escapeHtml(x.category)+' ・ 登録 '+escapeHtml((x.created_at||'').slice(0,10)||'日付不明')+'</div></div><button type="button" class="tinybtn print-fav-toggle" data-print-favorite="'+escapeHtml(x.id)+'" aria-label="お気に入り切替">'+(favs.includes(x.id)?'★':'☆')+'</button><button type="button" class="btn" data-print-open="'+escapeHtml(x.id)+'">開く・印刷</button>'+(admin?'<button type="button" class="tinybtn" data-print-change-tag="'+escapeHtml(x.id)+'">タグ変更</button><button type="button" class="tinybtn" data-print-delete="'+escapeHtml(x.id)+'">削除</button>':'')+'</div>').join(''):'<p class="notice">該当する書類がありません。検索や分類を変更してください。</p>';
  $('printDocList').querySelectorAll('[data-print-favorite]').forEach(b=>b.onclick=()=>{
   const favs=printDocFavoritesRead(),id=b.dataset.printFavorite,updated=favs.includes(id)?favs.filter(x=>x!==id):[...favs,id];
   try{localStorage.setItem(PRINT_FAVORITES_KEY,JSON.stringify(updated))}catch(e){$('printDocStatus').textContent='お気に入り保存に失敗：'+e.message}
   printDocRender();
  });
  $('printDocList').querySelectorAll('[data-print-open]').forEach(b=>b.onclick=()=>printDocOpenById(b.dataset.printOpen));
+ $('printDocList').querySelectorAll('[data-print-change-tag]').forEach(b=>b.onclick=async()=>{
+  if(!printDocIsAdmin())return alert('管理者だけがタグを変更できます');
+  const doc=printDocs.find(x=>x.id===b.dataset.printChangeTag);if(!doc)return;
+  const cats=printDocAllCategories();
+  const input=prompt('「'+doc.title+'」の変更先タグを選択してください。\n'+cats.map((cat,i)=>(i+1)+'：'+cat).join('\n')+'\n\n番号を入力',String(Math.max(0,cats.indexOf(doc.category))+1));
+  if(input===null)return;
+  const n=Number(input);if(!Number.isInteger(n)||n<1||n>cats.length)return alert('表示されているタグ番号を入力してください');
+  const category=cats[n-1];if(category===doc.category)return;
+  if(!confirm('「'+doc.title+'」のタグを\n'+doc.category+' → '+category+'\nに変更しますか？'))return;
+  b.disabled=true;$('printDocStatus').textContent='タグを更新しています…';
+  try{
+   const rows=await printDocApi('/rest/v1/store_print_documents?id=eq.'+encodeURIComponent(doc.id)+'&team_id=eq.'+encodeURIComponent(cloudCfg.team),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({category})});
+   if(!Array.isArray(rows)||rows.length!==1)throw Error('変更結果を確認できませんでした');
+   doc.category=rows[0].category;
+   printDocSyncCategoryOptions();printDocRender();
+   $('printDocStatus').textContent='「'+doc.title+'」のタグを「'+category+'」へ変更しました';
+  }catch(e){$('printDocStatus').textContent='タグ変更エラー：'+e.message+'。最新の一覧を確認してください';await printDocLoad()}
+  finally{b.disabled=false}
+ });
  $('printDocList').querySelectorAll('[data-print-delete]').forEach(b=>b.onclick=async()=>{
   if(!printDocIsAdmin())return;
   const doc=printDocs.find(d=>d.id===b.dataset.printDelete);if(!doc||!confirm('「'+doc.title+'」を店舗の一覧から削除しますか？'))return;
