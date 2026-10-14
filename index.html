@@ -1952,6 +1952,17 @@ async function pushSubscribe(){
  if(permission!=='granted')throw Error('通知が許可されませんでした');
  return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
 }
+async function pushBackend(mode,data={}){
+ if(!cloudSession?.access_token)throw Error('ログインしてください');
+ return authorized(async()=>{
+  const r=await cloudFetchTimed(cloudCfg.url.replace(/\/$/,'')+'/functions/v1/glink-push',{
+   method:'POST',headers:{apikey:cloudCfg.key,'Authorization':'Bearer '+cloudSession.access_token,'Content-Type':'application/json'},body:JSON.stringify({mode,...data})
+  },18000);
+  const json=await r.json().catch(()=>({}));
+  if(!r.ok)throw Error(json.error||'通知送信に失敗しました（HTTP '+r.status+'）');
+  return json;
+ });
+}
 async function pushRegister(subscription){
  const token=subscription.toJSON();
  const existing=await authorized(()=>cloudFetch('/rest/v1/push_devices?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&select=id,endpoint&limit=20'));
@@ -1967,4 +1978,31 @@ $('pushEnable').onclick=async()=>{
  finally{$('pushEnable').disabled=false}
 };
 
+
+$('pushSave').onclick=async()=>{
+ if(!glinkPushDevice)return pushMessage('先に通知を有効化してください');
+ $('pushSave').disabled=true;
+ try{
+  const rows=await authorized(()=>cloudFetch('/rest/v1/push_devices?id=eq.'+encodeURIComponent(glinkPushDevice.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({visit_alert:$('pushVisit').checked,admin_alert:activeRole==='admin'&&$('pushAdmin').checked})}));
+  if(!Array.isArray(rows)||rows.length!==1)throw Error('保存内容を確認できません');
+  glinkPushDevice=rows[0];pushMessage('通知設定を保存しました');
+ }catch(e){pushMessage('設定エラー：'+e.message)}finally{$('pushSave').disabled=false}
+};
+$('pushTest').onclick=async()=>{
+ if(!glinkPushDevice)return pushMessage('先に通知を有効化してください');
+ $('pushTest').disabled=true;
+ try{const result=await pushBackend('test',{device_id:glinkPushDevice.id});pushMessage(result.ok?'テスト通知を送信しました':'テスト送信を確認できません')}
+ catch(e){pushMessage('テスト通知：'+e.message)}
+ finally{$('pushTest').disabled=false}
+};
+$('pushDisable').onclick=async()=>{
+ if(!confirm('このiPhoneへの通知を停止しますか？'))return;
+ $('pushDisable').disabled=true;
+ try{
+  if(glinkPushDevice)await authorized(()=>cloudFetch('/rest/v1/push_devices?id=eq.'+encodeURIComponent(glinkPushDevice.id),{method:'DELETE'}));
+  const reg=await navigator.serviceWorker.ready,sub=await reg.pushManager.getSubscription();if(sub)await sub.unsubscribe();
+  glinkPushDevice=null;pushMessage('通知を停止しました')
+ }catch(e){pushMessage('通知停止エラー：'+e.message)}
+ finally{$('pushDisable').disabled=false}
+};
 </script></body></html>
