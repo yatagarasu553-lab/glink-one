@@ -2079,4 +2079,48 @@ window.addEventListener('load',glinkPushOpenTarget,{once:true});
   },0);
  },true);
 })();
+</script>
+<script>
+/* Independent push button recovery; does not change sales modules. */
+(function(){
+ const button=document.getElementById('pushEnable');
+ const status=document.getElementById('pushStatus');
+ const cap=document.getElementById('pushCapability');
+ if(!button||!status)return;
+ if(button.onclick)return;
+ const note=s=>{status.textContent=s;};
+ if(cap)cap.textContent='通知診断：ボタンの独立処理を準備しました';
+ button.addEventListener('click',async()=>{
+  button.disabled=true;
+  note('通知設定の確認を開始しています…');
+  try{
+   const standalone=window.matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+   if(!standalone)throw Error('ホーム画面のアイコンから起動してください');
+   if(!('Notification' in window)||!('serviceWorker' in navigator)||!('PushManager' in window))throw Error('Web Pushが使用できません');
+   if(typeof cloudSession==='undefined'||!cloudSession?.access_token)throw Error('TEAM SYNCのログイン情報が読み込めていません。ログイン画面を確認してください');
+   if(typeof cloudCfg==='undefined'||!cloudCfg?.team||!cloudCfg?.url||!cloudCfg?.key)throw Error('TEAM SYNCの接続設定が初期化されていません');
+   const permission=Notification.permission==='granted'?'granted':await Notification.requestPermission();
+   if(permission!=='granted')throw Error('通知が許可されていません');
+   note('端末の通知機能を登録中…');
+   const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+   const key='BHSpkTeaXMkUYLqaF1zfHPnI5GeHhNgTvFxv5m4lJLCsylxgJQEB-7CpYuVT4l6bOSPhH66hsJl8K8VPem56npo';
+   const decode=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/').padEnd(Math.ceil(s.length/4)*4,'=')),v=>v.charCodeAt(0));
+   let sub=await reg.pushManager.getSubscription();
+   if(sub){const old=sub.options?.applicationServerKey;const expected=decode(key);if(!old||new Uint8Array(old).length!==expected.length||!new Uint8Array(old).every((v,i)=>v===expected[i])){if(!confirm('古い通知登録を新しい鍵に更新しますか？'))throw Error('更新をキャンセルしました');await sub.unsubscribe();sub=null}}
+   if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:decode(key)});
+   note('通知登録をサーバーに保存中…');
+   const base=cloudCfg.url.replace(/\/$/,'')+'/rest/v1/push_devices';
+   const headers={apikey:cloudCfg.key,Authorization:'Bearer '+cloudSession.access_token,'Content-Type':'application/json',Prefer:'return=representation'};
+   const lookup=await fetch(base+'?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&select=id,endpoint&limit=30',{headers});
+   if(!lookup.ok)throw Error('端末の確認に失敗（HTTP '+lookup.status+'）');
+   const found=(await lookup.json()).find(v=>v.endpoint===sub.endpoint);
+   const keys=sub.toJSON().keys;
+   const payload={team_id:cloudCfg.team,user_id:cloudSession.user.id,endpoint:sub.endpoint,p256dh:keys.p256dh,auth_key:keys.auth,enabled:true,visit_alert:document.getElementById('pushVisit')?.checked!==false,admin_alert:false};
+   const saved=await fetch(found?base+'?id=eq.'+encodeURIComponent(found.id):base,{method:found?'PATCH':'POST',headers,body:JSON.stringify(payload)});
+   if(!saved.ok)throw Error('端末の保存に失敗（HTTP '+saved.status+'）');
+   note('通知端末を登録しました。次にテスト通知をお試しください');
+  }catch(e){note('通知設定エラー：'+String(e?.message||e))}
+  finally{button.disabled=false}
+ });
+})();
 </script></body></html>
