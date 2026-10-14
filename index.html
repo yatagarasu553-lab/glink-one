@@ -1909,5 +1909,17 @@ $('pageBack').onclick=()=>{
  const prev=navigationHistory[navigationHistory.length-1]||'home';
  navigate(prev);historyGoingBack=false;
 };
-$('pushEnable').onclick=()=>alert('通知を設定しています。プッシュ通知の配信設定が必要です。');
+const GLINK_PUSH_PUBLIC='BFocqlYDY1e_WaL89stHo3WKAUdMowRQ3WsOkWrUuo-iroMa_SO7rj-dy2_6BEASMg0MjaB0-dlWIIHeKTrXblQ';
+let glinkPushDevice=null;
+function pushOnHome(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
+function pushMessage(msg){$('pushStatus').textContent=msg}
+function pushUiStatus(){
+ const supported='Notification'in window&&'PushManager'in window&&'serviceWorker'in navigator;
+ $('pushCapability').textContent=!supported?'Webプッシュ非対応です':!pushOnHome()?'iPhoneのホーム画面に追加して、アイコンから起動してください':'通知機能に対応しています';
+ $('pushAdmin').disabled=activeRole!=='admin';
+ if(activeRole!=='admin')$('pushAdmin').checked=false;
+}
+pushUiStatus();
+$('pushEnable').onclick=()=>alert('サーバーの配信設定が必要です。');
+
 </script></body></html>
