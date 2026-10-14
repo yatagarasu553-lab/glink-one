@@ -1209,7 +1209,7 @@ function cbCompute(){
    else if(ok)warnings.push('楽天上乗せの有効な基本施策が未登録です。');
   }
  }
- if(cbBaseError)warnings.push('基本CBの読み込みに失敗しました。基本CBは安全のため未計上です。'); else if(!cbBaseLoaded&&cbContracts.length)warnings.push('基本CBを読み込んでいます。');
+ if(cbBaseError)warnings.push('基本CBの読み込みに失敗しました。基本CBは安全のため未計上です。'); if(!cloudSession&&cbContracts.length)warnings.push('未ログインのため初期登録の2026年10月施策で試算しています。店舗の最新変更はログインして確認してください。'); else if(!cbBaseLoaded&&cbContracts.length)warnings.push('基本CBを読み込んでいます。');
  if(fixed){
   if(ymCount&&eligibleYMFixed)add('YMおうち割 '+ymCount+'回線 × 15,000円',ymCount*15000,existing?'points':'prepaid');
   else if(ymCount)warnings.push('YMおうち割の登録済み施策開始前です。');
@@ -1317,7 +1317,7 @@ function cbRenderAudit(){
  }).join(''):'<p class="muted micro">変更履歴はありません。</p>';
 }
 async function cbLoadBaseAndAudit(){
- if(!cloudSession||!cloudCfg.team){cbBaseRates=[];cbBaseLoaded=false;cbBaseError=false;cbAuditHistory=[];cbRenderBase();cbCompute();return}
+ if(!cloudSession||!cloudCfg.team){cbBaseRates=Object.entries({YM_MNP:15000,YM_U18:10000,YM_O19:5000,SB_MNP:15000,RAKUTEN_BONUS:5000}).map(([rate_key,amount])=>({rate_key,amount,starts_on:'2026-10-01',ends_on:'2026-10-31',is_active:true}));cbBaseLoaded=true;cbBaseError=false;cbAuditHistory=[];cbRenderBase();cbCompute();return}
  try{
   const data=await authorized(()=>cloudFetch('/rest/v1/cb_base_rates?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=*&order=starts_on.desc'));
   cbBaseRates=Array.isArray(data)?data:[];cbBaseLoaded=true;cbBaseError=false;
