@@ -7,7 +7,10 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 .bulk-numbers{grid-template-columns:repeat(3,minmax(0,1fr))}
 .bulk-item,.bulk-panel,#bulkRows{min-width:0;max-width:100%}
 @media(max-width:360px){.bulk-numbers{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.img-manual-label{display:inline-block;font-size:10px;font-weight:600;line-height:1.5;color:#a9d9ff;background:#1c3d5d;border:1px solid #3c719c;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}.push-option{display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #2c435d}.push-option input{width:22px;height:22px;flex:none}.push-option span{font-size:14px}#pushCapability{margin:12px 0}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+.img-manual-label{display:inline-block;font-size:10px;font-weight:600;line-height:1.5;color:#a9d9ff;background:#1c3d5d;border:1px solid #3c719c;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}.push-option{display:flex;align-items:center;gap:10px;padding:13px 0;border-bottom:1px solid #2c435d}.push-option input{width:22px;height:22px;flex:none}.push-option span{font-size:14px}#pushCapability{margin:12px 0}
+/* Lead calendar: responsive, read-only date overview */
+.lead-cal-panel{display:grid;gap:10px}.lead-cal-nav{display:flex;align-items:center;justify-content:space-between;gap:5px;flex-wrap:wrap}.lead-cal-nav strong{font-size:16px}.lead-cal-weekdays,.lead-cal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}.lead-cal-weekdays{text-align:center;color:#94a9c7;font-size:11px}.lead-cal-weekdays span:first-child{color:#fda4af}.lead-cal-weekdays span:last-child{color:#93c5fd}.lead-cal-day{border:1px solid #30415d;background:#142238;color:#eaf1fc;border-radius:9px;min-height:64px;padding:5px 2px;display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;cursor:pointer}.lead-cal-day:disabled{opacity:.15;cursor:default}.lead-cal-day.is-selected{border:2px solid #55bdfa;background:#173c5d}.lead-cal-day.is-today .lead-cal-num{background:#2669a4;color:white;border-radius:99px;padding:1px 6px}.lead-cal-day.has-leads{background:#172c40}.lead-cal-num{font-weight:700;font-size:13px}.lead-cal-count{font-size:10px;font-weight:800;color:#8be4f8;line-height:1.15}.lead-cal-lines{font-size:10px;color:#d0daee;line-height:1.15}.lead-cal-details{border-top:1px solid #34435d;padding-top:12px}.lead-cal-details .lead-card{margin-top:10px}.lead-cal-empty{color:#9fb0cb;font-size:12px}.lead-cal-detail-button{margin-top:8px}@media(max-width:380px){.lead-cal-day{min-height:59px}.lead-cal-count,.lead-cal-lines{font-size:9px}.lead-cal-nav{gap:3px}}
+</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="home-quick"><div class="home-quick-head"><b>クイックアクセス</b><button type="button" class="tinybtn" id="homeQuickEdit">並び替え・編集</button></div><div class="home-shortcuts" id="homeShortcutList"></div><div id="homeQuickSettings" class="home-quick-settings" hidden><p class="muted micro">使う機能を最大6個選択し、上下ボタンで順番を変更します。この端末だけの設定です。</p><div id="homeQuickOptions"></div><button type="button" class="tinybtn wide" id="homeQuickReset">初期設定に戻す</button></div></div>
@@ -61,6 +64,12 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 <button class="tinybtn wide" id="pushSave" type="button">ON/OFFを保存</button></div>
 <div class="panel"><b>通知テスト</b><button id="pushTest" type="button" class="btn wide secondary">🔔 テスト通知を送信</button><p id="pushTestResult" class="muted micro" role="status" aria-live="polite">未送信</p></div>
 </section><section id="leads" class="screen"><div class="heading"><div><h1>見込み・再来店</h1><p class="muted micro">担当と来店予定を管理。顧客の氏名・電話番号は入力しないでください。</p></div></div>
+<div class="panel lead-cal-panel"><div class="row"><b>📅 見込みカレンダー</b><span id="leadCalSummary" class="muted micro">予定を確認中</span></div>
+<div class="lead-cal-nav"><button type="button" id="leadCalPrev" class="tinybtn" aria-label="前の月">‹ 前月</button><strong id="leadCalMonth"></strong><button type="button" id="leadCalNext" class="tinybtn" aria-label="次の月">翌月 ›</button><button type="button" id="leadCalToday" class="tinybtn">今月</button></div>
+<div class="lead-cal-weekdays"><span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span></div>
+<div id="leadCalDays" class="lead-cal-grid" aria-label="再来店予定カレンダー"></div>
+<div id="leadCalDetails" class="lead-cal-details" aria-live="polite"></div>
+<p class="muted micro">各日付に見込みの組数・台数を表示。日付をタップすると予定の詳細が開きます。日時未設定の見込みは下の一覧から確認できます。</p></div>
 <div class="panel"><div class="row"><b>見込みの登録・編集</b><span id="leadSyncStatus" class="muted micro">共有データ確認中</span></div>
 <form id="leadForm"><input id="leadEditId" type="hidden"><label>見込み番号（任意の識別名）<input id="leadCode" maxlength="40" required placeholder="例：10-14-A01"></label>
 <div class="two"><label>キャリア<select id="leadCarrier"><option value="YM">YM</option><option value="SB">SB</option><option value="未定">未定</option></select></label><label>見込み台数<input id="leadLines" type="number" min="0" max="50" value="1" required></label></div>
@@ -1685,6 +1694,45 @@ function leadRefreshTodayCount(){
  const el=$('homeLeadToday');if(el)el.textContent=active.length+'組';
  const count=$('leadTodayCount');if(count)count.textContent=active.length+'組';
 }
+let leadCalendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
+let leadCalendarSelected=(function(){const d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')})();
+function leadDateKey(value){
+ if(!value)return '';
+ const d=new Date(value);if(Number.isNaN(d.getTime()))return '';
+ return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-');
+}
+function leadCalendarRender(){
+ const grid=$('leadCalDays'),details=$('leadCalDetails');if(!grid||!details)return;
+ const year=leadCalendarMonth.getFullYear(),month=leadCalendarMonth.getMonth();
+ const monthKey=year+'-'+String(month+1).padStart(2,'0');
+ $('leadCalMonth').textContent=year+'年'+(month+1)+'月';
+ const active=storeLeads.filter(r=>r.visit_at&&!['成約','失注'].includes(r.status));
+ const byDate=new Map();
+ for(const r of active){const k=leadDateKey(r.visit_at);if(!k)continue;if(!byDate.has(k))byDate.set(k,[]);byDate.get(k).push(r)}
+ const inMonth=active.filter(r=>leadDateKey(r.visit_at).startsWith(monthKey));
+ $('leadCalSummary').textContent=inMonth.length+'組 ／ '+inMonth.reduce((a,r)=>a+(Number(r.estimated_lines)||0),0)+'台';
+ const offset=new Date(year,month,1).getDay(),days=new Date(year,month+1,0).getDate();
+ const cells=[];for(let i=0;i<offset;i++)cells.push('<span aria-hidden="true"></span>');
+ const today=leadDateKey(new Date());
+ for(let n=1;n<=days;n++){
+  const day=monthKey+'-'+String(n).padStart(2,'0'),rows=byDate.get(day)||[],lines=rows.reduce((s,r)=>s+(Number(r.estimated_lines)||0),0);
+  const classes=['lead-cal-day',rows.length?'has-leads':'',day===leadCalendarSelected?'is-selected':'',day===today?'is-today':''].filter(Boolean).join(' ');
+  cells.push('<button type="button" class="'+classes+'" data-lead-calendar-day="'+day+'" aria-pressed="'+(day===leadCalendarSelected)+'" aria-label="'+(month+1)+'月'+n+'日 '+rows.length+'組 '+lines+'台"><span class="lead-cal-num">'+n+'</span>'+(rows.length?'<span class="lead-cal-count">'+rows.length+'組</span><span class="lead-cal-lines">'+lines+'台</span>':'')+'</button>');
+ }
+ grid.innerHTML=cells.join('');
+ grid.querySelectorAll('[data-lead-calendar-day]').forEach(b=>b.onclick=()=>{leadCalendarSelected=b.dataset.leadCalendarDay;leadCalendarRender()});
+ const selected=byDate.get(leadCalendarSelected)||[];
+ const label=leadCalendarSelected.replace(/-/g,'/');
+ details.innerHTML='<div class="row"><b>'+escapeHtml(label)+' の予定</b><span class="muted micro">'+selected.length+'組・'+selected.reduce((s,r)=>s+(Number(r.estimated_lines)||0),0)+'台</span></div>'+
+ (selected.length?selected.slice().sort((a,b)=>new Date(a.visit_at)-new Date(b.visit_at)).map(r=>{
+  const time=new Date(r.visit_at).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+  return '<div class="lead-card"><div class="row"><strong>'+escapeHtml(time)+'　'+escapeHtml(r.reference_code||'見込み')+'</strong><span class="lead-state">'+escapeHtml(r.status)+'</span></div><div class="muted micro">担当：'+escapeHtml(r.staff_name||'未設定')+' ／ '+escapeHtml(r.carrier||'未定')+' ／ '+Math.max(0,Number(r.estimated_lines)||0)+'台</div>'+(r.memo?'<p class="micro">'+escapeHtml(r.memo)+'</p>':'')+'<button type="button" class="tinybtn lead-cal-detail-button" data-lead-calendar-show="'+escapeHtml(r.id)+'">一覧で確認・編集</button></div>';
+ }).join(''):'<p class="lead-cal-empty">この日の再来店予定はありません。</p>');
+ details.querySelectorAll('[data-lead-calendar-show]').forEach(b=>b.onclick=()=>{$('leadFilter').value='';$('leadSearch').value='';leadRender();const card=$('leadList').querySelector('[data-lead-edit="'+b.dataset.leadCalendarShow+'"]');if(card){card.closest('.lead-card')?.scrollIntoView({behavior:'smooth',block:'center'})}else{$('leadList').scrollIntoView({behavior:'smooth',block:'start'})}});
+}
+$('leadCalPrev').onclick=()=>{leadCalendarMonth=new Date(leadCalendarMonth.getFullYear(),leadCalendarMonth.getMonth()-1,1);leadCalendarSelected=leadDateKey(leadCalendarMonth);leadCalendarRender()};
+$('leadCalNext').onclick=()=>{leadCalendarMonth=new Date(leadCalendarMonth.getFullYear(),leadCalendarMonth.getMonth()+1,1);leadCalendarSelected=leadDateKey(leadCalendarMonth);leadCalendarRender()};
+$('leadCalToday').onclick=()=>{const n=new Date();leadCalendarMonth=new Date(n.getFullYear(),n.getMonth(),1);leadCalendarSelected=leadDateKey(n);leadCalendarRender()};
 function leadRender(){
  const root=$('leadList'),filter=$('leadFilter').value,q=$('leadSearch').value.trim().toLowerCase();
  const entries=storeLeads.filter(r=>(!filter||r.status===filter)&&(!q||(r.reference_code+' '+r.staff_name).toLowerCase().includes(q))).sort((a,b)=>(a.visit_at||'9999').localeCompare(b.visit_at||'9999'));
@@ -1730,6 +1778,7 @@ function leadRender(){
   }
  });
  leadRefreshTodayCount();
+ leadCalendarRender();
 }
 async function leadLoad(){
  if(!cloudSession||!cloudCfg.team){$('leadSyncStatus').textContent='ログインが必要です';return}
