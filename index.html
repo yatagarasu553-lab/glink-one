@@ -7,7 +7,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 .bulk-numbers{grid-template-columns:repeat(3,minmax(0,1fr))}
 .bulk-item,.bulk-panel,#bulkRows{min-width:0;max-width:100%}
 @media(max-width:360px){.bulk-numbers{grid-template-columns:repeat(2,minmax(0,1fr))}}
-</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+.img-manual-label{display:inline-block;font-size:10px;font-weight:600;line-height:1.5;color:#a9d9ff;background:#1c3d5d;border:1px solid #3c719c;border-radius:5px;padding:1px 5px;margin-left:5px;vertical-align:middle;white-space:nowrap}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="home-quick"><div class="home-quick-head"><b>クイックアクセス</b><button type="button" class="tinybtn" id="homeQuickEdit">並び替え・編集</button></div><div class="home-shortcuts" id="homeShortcutList"></div><div id="homeQuickSettings" class="home-quick-settings" hidden><p class="muted micro">使う機能を最大6個選択し、上下ボタンで順番を変更します。この端末だけの設定です。</p><div id="homeQuickOptions"></div><button type="button" class="tinybtn wide" id="homeQuickReset">初期設定に戻す</button></div></div>
@@ -1137,7 +1137,7 @@ function initImageMaker(){
  const staff=$('imgStaff'),old=staff.value;staff.innerHTML=state.staff.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');if(state.staff.includes(old))staff.value=old;else if(loggedStaffName)staff.value=loggedStaffName;
  staff.disabled=activeRole!=='admin';
  if(activeRole!=='admin'&&loggedStaffName)staff.value=loggedStaffName;
- if(!$('imgEditor').children.length)$('imgEditor').innerHTML=IMAGE_FIELDS.map(([k,l])=>'<label>'+l+'<input type="number" min="0" step="1" id="img_'+k+'" value="0"></label>').join('');
+ if(!$('imgEditor').children.length)$('imgEditor').innerHTML=IMAGE_FIELDS.map(([k,l])=>'<label><span>'+l+(['won','prospectCreated','prospectReturned'].includes(k)?' <small class="img-manual-label">ここは手入力</small>':'')+'</span><input type="number" min="0" step="1" id="img_'+k+'" value="0"></label>').join('');
  drawReportImage();
 }
 $('imgDate').value=nowDay();$('imgToday').onclick=()=>{$('imgDate').value=nowDay();imgLoadData()};$('imgLoad').onclick=imgLoadData;
