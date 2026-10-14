@@ -1952,6 +1952,13 @@ async function pushSubscribe(){
  if(permission!=='granted')throw Error('通知が許可されませんでした');
  return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
 }
+let lastPushErrorReport=0;
+async function pushNotifySyncError(){
+ if(!cloudSession||!cloudCfg.team||Date.now()-lastPushErrorReport<30*60000)return;
+ lastPushErrorReport=Date.now();
+ try{await pushBackend('sync_error',{team_id:cloudCfg.team})}
+ catch(e){console.warn('同期異常を通知できませんでした',e)}
+}
 async function pushBackend(mode,data={}){
  if(!cloudSession?.access_token)throw Error('ログインしてください');
  return authorized(async()=>{
