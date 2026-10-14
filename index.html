@@ -1642,7 +1642,7 @@ function leadRender(){
   if(!confirm('見込み「'+r.reference_code+'」を削除しますか？ この操作は元に戻せません。'))return;
   b.disabled=true;$('leadSyncStatus').textContent='削除中…';
   try{
-   await authorized(()=>cloudFetch('/rest/v1/store_leads?id=eq.'+encodeURIComponent(r.id)+'&team_id=eq.'+encodeURIComponent(cloudCfg.team),{method:'DELETE',headers:{Prefer:'return=representation'}}));
+   const deleted=await authorized(()=>cloudFetch('/rest/v1/store_leads?id=eq.'+encodeURIComponent(r.id)+'&team_id=eq.'+encodeURIComponent(cloudCfg.team),{method:'DELETE',headers:{Prefer:'return=representation'}}));if(!Array.isArray(deleted)||deleted.length!==1)throw Error('削除対象が見つからないか、削除権限がありません');
    storeLeads=storeLeads.filter(x=>x.id!==r.id);
    if($('leadEditId').value===r.id)leadClearForm();
    leadRender();$('leadFormMessage').textContent='見込みを削除しました';
@@ -1678,9 +1678,14 @@ $('leadForm').onsubmit=async e=>{
  const duplicate=storeLeads.find(r=>r.reference_code===reference_code&&r.id!==id);if(duplicate)return alert('この見込み番号は登録済みです。重複登録を防ぐため保存を停止しました');
  leadSubmitting=true;$('leadSave').disabled=true;$('leadFormMessage').textContent='送信中…';
  try{
-  if(id)await authorized(()=>cloudFetch('/rest/v1/store_leads?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)}));
-  else await authorized(()=>cloudFetch('/rest/v1/store_leads',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...payload,team_id:cloudCfg.team,owner_id:cloudSession.user.id,created_by:cloudSession.user.id,staff_name:loggedStaffName||'スタッフ'})}));
-  leadClearForm();$('leadFormMessage').textContent='保存完了。最新の一覧を取得します。';await leadLoad();
+  const saved=id
+   ?await authorized(()=>cloudFetch('/rest/v1/store_leads?id=eq.'+encodeURIComponent(id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(payload)}))
+   :await authorized(()=>cloudFetch('/rest/v1/store_leads',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify({...payload,team_id:cloudCfg.team,owner_id:cloudSession.user.id,created_by:cloudSession.user.id,staff_name:loggedStaffName||'スタッフ'})}));
+  if(!Array.isArray(saved)||saved.length!==1)throw Error('保存結果が確認できませんでした');
+  storeLeads=[saved[0],...storeLeads.filter(r=>r.id!==saved[0].id)];
+  leadRender();leadClearForm();
+  $('leadFormMessage').textContent='保存完了。本日来店予定の件数にも反映しました。';
+  if(!leadLoading)await leadLoad();
  }catch(err){$('leadFormMessage').textContent='送信結果を確認できません：'+err.message+'。自動再送はしません。まず「最新情報を取得」で登録状況を確認してください。';leadSaveDraft()}
  finally{leadSubmitting=false;$('leadSave').disabled=false}
 };
