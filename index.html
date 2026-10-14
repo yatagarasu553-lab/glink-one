@@ -278,7 +278,7 @@ const origExport=$('exportBtn').onclick;
 const GLINK_ROSTER=[{id:'GLK001',name:'スタッフA',title:'管理者',role:'admin'},{id:'GLK002',name:'スタッフB',title:'スタッフ',role:'member'},{id:'GLK003',name:'スタッフC',title:'スタッフ',role:'member'},{id:'GLK004',name:'スタッフD',title:'スタッフ',role:'member'},{id:'GLK005',name:'スタッフE',title:'スタッフ',role:'member'},{id:'GLK006',name:'スタッフF',title:'副店長',role:'admin'},{id:'GLK007',name:'スタッフG',title:'店長',role:'admin'},{id:'GLK008',name:'スタッフH',title:'スタッフ',role:'member'}];
 if(state.staff.length===3&&['スタッフA','スタッフB','スタッフC'].every((x,i)=>state.staff[i]===x))state.staff=GLINK_ROSTER.map(x=>x.name);
 // Persist initial October targets; older backups remain compatible.
-persist();render();
+persist();try{render()}catch(e){console.error('GLINK first render failed',e);const status=$('loginCurrentStatus');if(status)status.textContent='表示を初期化しています。ログイン機能は引き続き利用できます。'}
 
 // v3 opt-in cloud sync. The cloud document is versioned to protect against stale-device overwrites.
 const CLOUD_KEY='glink-one-v3-cloud';let activeRole=null;let cloudCfg={},cloudRevision=null,cloudReady=false,cloudBusy=false,cloudDirty=false,cloudTimer=null,cloudLastSaved='';
@@ -292,12 +292,18 @@ function storeCloudSession(v){
  if(!next.access_token||!next.refresh_token||!next.user?.id)throw Error('ログイン情報が不完全です。再ログインしてください');
  cloudSession=next;localStorage.setItem('glink-cloud-session',JSON.stringify(next));return next;
 }
+async function cloudFetchTimed(url,options={},timeoutMs=12000){
+ const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+ try{return await fetch(url,{...options,signal:controller.signal})}
+ catch(e){if(e?.name==='AbortError')throw Error('接続がタイムアウトしました。通信環境を確認して再接続してください');throw e}
+ finally{clearTimeout(timer)}
+}
 async function refreshToken(){
  if(tokenRefreshPromise)return tokenRefreshPromise;
  if(!cloudSession?.refresh_token)throw Error('ログイン期限が切れました。再ログインしてください');
  const token=cloudSession.refresh_token;
  tokenRefreshPromise=(async()=>{
-  const r=await fetch(cloudCfg.url.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:token})});
+  const r=await cloudFetchTimed(cloudCfg.url.replace(/\/$/,'')+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:token})});
   let v={};try{v=await r.json()}catch{}
   if(!r.ok)throw Error(v.error_description||v.msg||v.message||'認証情報を更新できませんでした（HTTP '+r.status+'）');
   return storeCloudSession(v);
@@ -306,7 +312,7 @@ async function refreshToken(){
 }
 async function cloudFetch(path,opts={}){
  if(!cloudSession?.access_token)throw Error('ログインしてください');
- const send=()=>fetch(cloudCfg.url.replace(/\/$/,'')+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
+ const send=()=>cloudFetchTimed(cloudCfg.url.replace(/\/$/,'')+path,{...opts,headers:{...cloudHeaders(),...(opts.headers||{})}});
  let r=await send();
  if(r.status===401&&cloudSession?.refresh_token){await refreshToken();r=await send()}
  let data=null;try{data=await r.json()}catch{}
@@ -469,7 +475,7 @@ const basePersist=persist;persist=function(){if(cloudSession&&activeRole!=='admi
 function initCloudForm(){drawRoster();$('cloudUrl').value=cloudCfg.url||'';$('cloudKey').value=cloudCfg.key||'';$('cloudTeam').value=cloudCfg.team||'';cloudStatus('端末内モード。共有機能を使うには設定とログインが必要です。');try{cloudSession=JSON.parse(localStorage.getItem('glink-cloud-session')||'null')}catch{cloudSession=null}if(cloudSession&&cloudValid()){cloudStatus('ログイン情報を確認しています…');loadRole().then(()=>cloudDownload(true)).catch(e=>{console.error('GLINK auto sign-in',e);cloudStatus('自動ログインを確認できません：'+e.message+'。ネット接続を確認して「再接続」を押してください。',true)})}}
 $('cloudSaveConfig').onclick=()=>{const url=$('cloudUrl').value.trim().replace(/\/$/,''),key=$('cloudKey').value.trim(),team=$('cloudTeam').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)||!key||!/^[0-9a-f-]{36}$/i.test(team))return alert('URL・公開キー・UUIDを確認してください');if(/^sb_secret_|^service_role/i.test(key))return alert('秘密鍵は登録しないでください');cloudCfg={url,key,team};activeRole=null;updateRoleUI();localStorage.setItem(CLOUD_KEY,JSON.stringify(cloudCfg));cloudReady=false;cloudRevision=null;cloudStatus('接続情報を保存しました。ログインしてください。')};
 $('cloudRetry').onclick=async()=>{if(!cloudSession)return alert('先にログインしてください');const b=$('cloudRetry');b.disabled=true;try{cloudStatus('再接続中…');await loadRole();await cloudDownload(true);if(cloudReady)cloudStatus('再接続しました（TEAM SYNC）')}catch(e){cloudStatus('再接続エラー：'+e.message,true)}finally{b.disabled=false}};
-$('cloudSignin').onclick=async()=>{try{if(!cloudValid())throw Error('先に接続設定を保存してください');const r=await fetch(cloudCfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:$('cloudEmail').value.trim(),password:$('cloudPass').value})});const v=await r.json();if(!r.ok)throw Error(v.error_description||v.msg||'認証できません');storeCloudSession(v);$('cloudPass').value='';cloudReady=false;cloudDirty=false;cloudStatus('認証成功。店舗権限と同期を確認しています…');try{await loadRole();await cloudDownload(true)}catch(syncError){cloudStatus('認証は成功しましたが同期に失敗：'+syncError.message,true)}}catch(e){cloudStatus('認証エラー：'+e.message,true)}};
+$('cloudSignin').onclick=async()=>{try{if(!cloudValid())throw Error('先に接続設定を保存してください');const r=await cloudFetchTimed(cloudCfg.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:{'apikey':cloudCfg.key,'Content-Type':'application/json'},body:JSON.stringify({email:$('cloudEmail').value.trim(),password:$('cloudPass').value})});const v=await r.json();if(!r.ok)throw Error(v.error_description||v.msg||'認証できません');storeCloudSession(v);$('cloudPass').value='';cloudReady=false;cloudDirty=false;cloudStatus('認証成功。店舗権限と同期を確認しています…');try{await loadRole();await cloudDownload(true)}catch(syncError){cloudStatus('認証は成功しましたが同期に失敗：'+syncError.message,true)}}catch(e){cloudStatus('認証エラー：'+e.message,true)}};
 $('cloudDownload').onclick=async()=>{try{if(!confirm('この端末のデータをクラウド最新版で置き換えます。先にバックアップしてください。続けますか？'))return;await cloudDownload()}catch(e){cloudStatus(e.message,true)}};
 $('cloudRefresh').onclick=async()=>{try{await cloudDownload()}catch(e){cloudStatus(e.message,true)}};
 $('cloudUpload').onclick=async()=>{try{if(activeRole!=='admin')throw Error('管理者のみ操作できます');if(!cloudSession)throw Error('ログインしてください');if(cloudDirty)throw Error('未送信の変更があります');const current=await readCloud();if(current.revision!==cloudRevision)throw Error('クラウドデータが更新されています。先に最新を読み込んでください');if(!confirm('【管理者専用】現在のクラウドデータを端末の内容で置き換えます。バックアップ済みですか？'))return;cloudReady=true;cloudDirty=true;await cloudCommit();if(!cloudDirty&&cloudReady)alert('クラウドに保存しました')}catch(e){cloudStatus(e.message,true)}};
@@ -712,7 +718,15 @@ function setupFormDrafts(){
 
  }
 }
-try{initCloudForm()}catch(e){console.error('GLINK cloud initialization',e);const status=$('cloudStatus');if(status)status.textContent='ログイン画面の起動エラー：'+e.message}
+try{initCloudForm()}catch(e){console.error('GLINK cloud initialization',e);const msg='ログイン画面の起動エラー：'+e.message;const status=$('cloudStatus');if(status)status.textContent=msg;const login=$('loginCurrentStatus');if(login)login.textContent=msg}
+// Watchdog: never leave the login panel on its placeholder indefinitely.
+setTimeout(()=>{
+ const el=$('loginCurrentStatus');if(!el)return;
+ if(el.textContent.includes('ログイン状態を確認しています')||el.textContent.includes('ログイン情報を確認しています')){
+  el.textContent='認証確認に時間がかかっています。再接続を押すか、メールとパスワードでログインしてください。';
+  el.className='warn';
+ }
+},9000);
 try{setupFormDrafts()}catch(e){console.error('GLINK drafts',e)}
 try{drawDailyGoalEditor();renderDailyGoals()}catch(e){console.error('GLINK daily goals',e)}
 
