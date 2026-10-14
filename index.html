@@ -1943,7 +1943,8 @@ async function pushLoad(){
  if(!cloudSession||!cloudCfg.team){pushMessage('先にTEAM SYNCでログインしてください');return}
  if(!pushOnHome())return;
  try{
-  const reg=await navigator.serviceWorker.ready;
+  const reg=await navigator.serviceWorker.getRegistration('./');
+  if(!reg){glinkPushDevice=null;pushMessage('通知は未設定です。「通知を有効化」から登録してください');return}
   const subscription=await reg.pushManager.getSubscription();
   if(!subscription){glinkPushDevice=null;pushMessage('通知は未設定です');return}
   const devices=await authorized(()=>cloudFetch('/rest/v1/push_devices?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&select=*&limit=20'));
