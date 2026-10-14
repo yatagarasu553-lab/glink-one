@@ -2115,12 +2115,33 @@ window.addEventListener('load',glinkPushOpenTarget,{once:true});
    if(!lookup.ok)throw Error('端末の確認に失敗（HTTP '+lookup.status+'）');
    const found=(await lookup.json()).find(v=>v.endpoint===sub.endpoint);
    const keys=sub.toJSON().keys;
-   const payload={team_id:cloudCfg.team,user_id:cloudSession.user.id,endpoint:sub.endpoint,p256dh:keys.p256dh,auth_key:keys.auth,enabled:true,visit_alert:document.getElementById('pushVisit')?.checked!==false,admin_alert:false};
+   const payload={team_id:cloudCfg.team,user_id:cloudSession.user.id,endpoint:sub.endpoint,p256dh:keys.p256dh,auth_key:keys.auth,enabled:true,visit_alert:document.getElementById('pushVisit')?.checked!==false,admin_alert:typeof activeRole!=='undefined'&&activeRole==='admin'&&document.getElementById('pushAdmin')?.checked===true};
    const saved=await fetch(found?base+'?id=eq.'+encodeURIComponent(found.id):base,{method:found?'PATCH':'POST',headers,body:JSON.stringify(payload)});
    if(!saved.ok)throw Error('端末の保存に失敗（HTTP '+saved.status+'）');
    note('通知端末を登録しました。次にテスト通知をお試しください');
   }catch(e){note('通知設定エラー：'+String(e?.message||e))}
   finally{button.disabled=false}
+ });
+ const saveButton=document.getElementById('pushSave');
+ if(saveButton&&!saveButton.onclick)saveButton.addEventListener('click',async()=>{
+  saveButton.disabled=true;note('通知設定を保存中…');
+  try{
+   if(typeof cloudSession==='undefined'||!cloudSession?.access_token||typeof cloudCfg==='undefined')throw Error('TEAM SYNCにログインしてください');
+   const reg=await navigator.serviceWorker.getRegistration('./');
+   const sub=await reg?.pushManager.getSubscription();
+   if(!sub)throw Error('通知端末が登録されていません');
+   const base=cloudCfg.url.replace(/\/$/,'')+'/rest/v1/push_devices';
+   const headers={apikey:cloudCfg.key,Authorization:'Bearer '+cloudSession.access_token,'Content-Type':'application/json',Prefer:'return=representation'};
+   const lookup=await fetch(base+'?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&select=id,endpoint&limit=30',{headers});
+   if(!lookup.ok)throw Error('端末照会 HTTP '+lookup.status);
+   const current=(await lookup.json()).find(x=>x.endpoint===sub.endpoint);
+   if(!current)throw Error('この端末の登録が見つかりません');
+   const payload={visit_alert:document.getElementById('pushVisit')?.checked===true,admin_alert:typeof activeRole!=='undefined'&&activeRole==='admin'&&document.getElementById('pushAdmin')?.checked===true};
+   const response=await fetch(base+'?id=eq.'+encodeURIComponent(current.id),{method:'PATCH',headers,body:JSON.stringify(payload)});
+   if(!response.ok)throw Error('設定保存 HTTP '+response.status);
+   note('このiPhoneの通知設定を保存しました');
+  }catch(e){note('通知設定の保存エラー：'+String(e?.message||e))}
+  finally{saveButton.disabled=false}
  });
  const testButton=document.getElementById('pushTest');
  const testResult=document.getElementById('pushTestResult');
