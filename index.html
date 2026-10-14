@@ -174,8 +174,8 @@ function applyHomeVisibility(overrides){
  for(const id of ids){
   const el=document.getElementById(id);if(!el)continue;
   if(notice)home.insertBefore(el,notice);
-  const hidden=v[id]===false||home.classList.contains('home-compact');el.hidden=hidden;el.dataset.homeHidden=hidden?'true':'false';
-  el.style.setProperty('display',hidden?'none':id==='homeMainStats'?'grid':'block','important');
+  const hidden=v[id]===false,compact=home.classList.contains('home-compact');el.hidden=hidden||compact;el.dataset.homeHidden=hidden?'true':'false';
+  el.style.setProperty('display',hidden||compact?'none':id==='homeMainStats'?'grid':'block','important');
  }
  const own=insightEntries().filter(x=>x.staff===loggedStaffName&&String(x.date).startsWith(nowDay().slice(0,7))&&!x.monthOnly&&!x.legacyMonthly);
  const out=$('homePersonalSummary');
@@ -1782,7 +1782,7 @@ function bulkSyncStaff(){
  const list=$('bulkStaff'),old=list.value,allowed=cloudSession&&activeRole!=='admin'?[loggedStaffName].filter(Boolean):[...state.staff,'その他（外注など）'];
  list.innerHTML=allowed.map(n=>'<option value="'+escapeHtml(n)+'">'+escapeHtml(n)+'</option>').join('');
  if(allowed.includes(old))list.value=old;else if(allowed.includes(loggedStaffName))list.value=loggedStaffName;
- list.disabled=!!cloudSession&&activeRole!=='admin';
+ list.disabled=bulkPendingConfirmation||bulkSending||(!!cloudSession&&activeRole!=='admin');
 }
 function bulkStart(){
  bulkSyncStaff();
