@@ -1763,8 +1763,8 @@ $('bulkAddRow').onclick=()=>{if(bulkPendingConfirmation)return alert('送信確�
 $('bulkReset').onclick=()=>{if(bulkPendingConfirmation)return alert('送信状況の確認が必要です。下書きを残してあります');if(!confirm('一括入力をすべてクリアしますか？'))return;bulkRows=[bulkBlankRow()];bulkBatchId=null;bulkRender();bulkSaveDraft()};
 async function bulkVerifyPending(){
  if(!bulkPendingConfirmation||!bulkBatchId||!cloudSession)return true;
- const rows=await authorized(()=>cloudFetch('/rest/v1/staff_submissions?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&request_key=like.'+encodeURIComponent(bulkBatchId+'-%')+'&select=request_key&limit=25'));
- if(Array.isArray(rows)&&rows.length===bulkRows.length){bulkPendingConfirmation=false;bulkBatchId=null;bulkRows=[bulkBlankRow()];bulkRender();bulkSaveDraft();$('bulkStatus').textContent='前回送信した全案件の登録を確認できました';await loadStaffSubmissions();return false}
+ const rows=await authorized(()=>cloudFetch('/rest/v1/staff_submissions?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&request_key=like.'+encodeURIComponent(bulkBatchId+'-*')+'&select=request_key&limit=25'));
+ if(Array.isArray(rows)&&rows.length===bulkRows.length){await loadStaffSubmissions();bulkPendingConfirmation=false;bulkBatchId=null;bulkRows=[bulkBlankRow()];bulkRender();bulkSaveDraft();$('bulkStatus').textContent='前回送信した全案件の登録を確認できました';return false}
  if(Array.isArray(rows)&&rows.length>0){$('bulkStatus').textContent='前回の一部データが保存済みです。自動再送せず管理者へ確認してください';return false}
  $('bulkStatus').textContent='前回送信分はまだ確認できません。通信が安定してから再確認してください。';return false;
 }
@@ -1796,13 +1796,15 @@ $('bulkSubmit').onclick=async()=>{
    const saved=await authorized(()=>cloudFetch('/rest/v1/staff_submissions',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=representation'},body:JSON.stringify(payload)}));
    // Empty response is allowed only after verification, never assume success.
    if(!Array.isArray(saved))throw Error('一括登録の応答を確認できません');
-   bulkPendingConfirmation=false;bulkBatchId=null;await loadStaffSubmissions();
+   const checked=await authorized(()=>cloudFetch('/rest/v1/staff_submissions?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&request_key=like.'+encodeURIComponent(bulkBatchId+'-*')+'&select=request_key&limit=25'));
+   if(!Array.isArray(checked)||checked.length!==records.length)throw Error('一括登録の完了件数を確認できません');
+   await loadStaffSubmissions();bulkPendingConfirmation=false;bulkBatchId=null;
   }else{state.entries.push(...records.map(r=>({...r,id:newId()})));persist();render()}
   bulkRows=[bulkBlankRow()];bulkRender();bulkSaveDraft();$('bulkStatus').textContent='保存完了：'+records.length+'案件・換算'+sumCount+'件を登録しました';
  }catch(e){$('bulkStatus').textContent='結果を確認できません：'+e.message+'。自動再送せず「一括登録」から保存状況を確認してください。';bulkSaveDraft()}
  finally{bulkSending=false;$('bulkSubmit').disabled=false}
 };
-try{const d=JSON.parse(localStorage.getItem(BULK_DRAFT_KEY)||'null');if(d&&Array.isArray(d.rows)&&d.rows.length&&d.rows.length<=20){bulkRows=d.rows;$('bulkDate').value=d.date||nowDay();bulkBatchId=d.batchId||null;bulkPendingConfirmation=!!d.pending;bulkStart();if(d.staff&&[...$('bulkStaff').options].some(o=>o.value===d.staff))$('bulkStaff').value=d.staff;if(bulkPendingConfirmation)$('bulkStatus').textContent='前回の一括登録結果が未確認です。「すべて確認して一括登録」で保存状況を確認してください。'}else bulkStart()}catch(e){bulkStart()}
+try{const d=JSON.parse(localStorage.getItem(BULK_DRAFT_KEY)||'null');if(d&&Array.isArray(d.rows)&&d.rows.length&&d.rows.length<=20&&(!d.userId||!cloudSession||d.userId===cloudSession.user?.id)){bulkRows=d.rows;$('bulkDate').value=d.date||nowDay();bulkBatchId=d.batchId||null;bulkPendingConfirmation=!!d.pending;bulkStart();if(d.staff&&[...$('bulkStaff').options].some(o=>o.value===d.staff))$('bulkStaff').value=d.staff;if(bulkPendingConfirmation)$('bulkStatus').textContent='前回の一括登録結果が未確認です。「すべて確認して一括登録」で保存状況を確認してください。'}else bulkStart()}catch(e){bulkStart()}
 const navBulk=navigate;navigate=function(page){navBulk(page);if(page==='register')bulkSyncStaff()};
 
 </script></body></html>
