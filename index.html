@@ -1966,10 +1966,13 @@ async function pushSubscribe(){
  if(!cloudReady||!cloudSession)throw Error('先にTEAM SYNCへログインしてください');
  if(!pushOnHome())throw Error('ホーム画面に追加したGLINK ONEから開いてください');
  if(!('PushManager'in window)||!('Notification'in window))throw Error('通知非対応の端末です');
- const permission=await Notification.requestPermission();
- const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
- if(permission!=='granted')throw Error('通知が許可されませんでした');
- const existing=await reg.pushManager.getSubscription();
+ pushMessage('iPhoneの通知許可を確認中…');
+ const permission=Notification.permission==='granted'?'granted':await Promise.race([Notification.requestPermission(),new Promise((_,reject)=>setTimeout(()=>reject(Error('通知許可がタイムアウトしました')),15000))]);
+ if(permission!=='granted')throw Error('通知が許可されていません。iPhoneの設定から通知を確認してください');
+ pushMessage('通知プログラムを準備中…');
+ const reg=await Promise.race([navigator.serviceWorker.register('./sw.js',{scope:'./'}),new Promise((_,reject)=>setTimeout(()=>reject(Error('Service Worker登録がタイムアウトしました')),15000))]);
+ pushMessage('端末登録を確認中…');
+ const existing=await Promise.race([reg.pushManager.getSubscription(),new Promise((_,reject)=>setTimeout(()=>reject(Error('端末確認がタイムアウトしました')),15000))]);
  if(existing){
   const key=existing.options?.applicationServerKey;
   const expected=pushDecodeKey(GLINK_PUSH_PUBLIC);
@@ -1978,7 +1981,8 @@ async function pushSubscribe(){
   if(!confirm('通知の署名キーを更新します。以前の通知登録を解除して再登録しますか？'))throw Error('通知の再登録をキャンセルしました');
   await existing.unsubscribe();
  }
- return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
+ pushMessage('iPhoneへの通知登録を実行中…');
+ return Promise.race([reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)}),new Promise((_,reject)=>setTimeout(()=>reject(Error('通知登録がタイムアウトしました')),20000))]);
 }
 let lastPushErrorReport=0;
 async function pushNotifySyncError(){
@@ -2008,8 +2012,8 @@ async function pushRegister(subscription){
  glinkPushDevice=result[0];pushMessage('iPhoneの通知登録を保存しました。プッシュ配信サーバーの設定が必要な場合は、テスト通知でエラーが表示されます。');
 }
 $('pushEnable').onclick=async()=>{
- $('pushEnable').disabled=true;
- try{const subscription=await pushSubscribe();await pushRegister(subscription)}catch(e){pushMessage(e.message)}
+ $('pushEnable').disabled=true;pushMessage('通知設定を開始しました…');
+ try{const subscription=await pushSubscribe();pushMessage('登録情報を保存中…');await pushRegister(subscription)}catch(e){pushMessage('通知設定エラー：'+(e?.message||String(e)))}
  finally{$('pushEnable').disabled=false}
 };
 
