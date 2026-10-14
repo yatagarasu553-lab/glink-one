@@ -1952,9 +1952,18 @@ async function pushSubscribe(){
  if(permission!=='granted')throw Error('通知が許可されませんでした');
  return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
 }
+async function pushRegister(subscription){
+ const token=subscription.toJSON();
+ const existing=await authorized(()=>cloudFetch('/rest/v1/push_devices?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&select=id,endpoint&limit=20'));
+ const row={team_id:cloudCfg.team,user_id:cloudSession.user.id,endpoint:subscription.endpoint,p256dh:token.keys.p256dh,auth_key:token.keys.auth,enabled:true,visit_alert:$('pushVisit').checked,admin_alert:activeRole==='admin'&&$('pushAdmin').checked};
+ const found=(existing||[]).find(x=>x.endpoint===subscription.endpoint);
+ const result=found?await authorized(()=>cloudFetch('/rest/v1/push_devices?id=eq.'+encodeURIComponent(found.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(row)})):await authorized(()=>cloudFetch('/rest/v1/push_devices',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)}));
+ if(!Array.isArray(result)||result.length!==1)throw Error('通知端末を登録できませんでした');
+ glinkPushDevice=result[0];pushMessage('端末登録が完了しました。テスト通知をお試しください');
+}
 $('pushEnable').onclick=async()=>{
  $('pushEnable').disabled=true;
- try{const subscription=await pushSubscribe();pushMessage(subscription?'iPhoneの通知許可が完了しました。端末を登録しています…':'端末登録を確認できません')}catch(e){pushMessage(e.message)}
+ try{const subscription=await pushSubscribe();await pushRegister(subscription)}catch(e){pushMessage(e.message)}
  finally{$('pushEnable').disabled=false}
 };
 
