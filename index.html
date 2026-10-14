@@ -127,6 +127,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
  });
  window.__glinkConnectionBootstrap=fill;
  window.addEventListener('error',function(ev){
+  window.__glinkStartupError=String(ev.message||ev.error?.message||'Unknown script error').slice(0,240);
   const status=document.getElementById('loginCurrentStatus');
   if(status&&status.textContent.includes('ログイン状態を確認しています')){
     status.className='warn';
@@ -2057,7 +2058,7 @@ window.addEventListener('load',glinkPushOpenTarget,{once:true});
 (function(){
  const status=()=>document.getElementById('pushStatus');
  const capability=()=>document.getElementById('pushCapability');
- let firstError='';
+ let firstError=window.__glinkStartupError||'';
  window.addEventListener('error',e=>{if(!firstError)firstError=String(e.message||'JavaScript error').slice(0,180);});
  window.addEventListener('unhandledrejection',e=>{if(!firstError)firstError=String(e.reason?.message||e.reason||'Promise rejection').slice(0,180);});
  function environment(){
@@ -2068,13 +2069,13 @@ window.addEventListener('load',glinkPushOpenTarget,{once:true});
  function showDiagnostics(){
   const e=environment(),el=capability(),s=status(),btn=document.getElementById('pushEnable');
   if(el)el.textContent='起動診断：'+(e.standalone?'ホーム画面アプリ':'ブラウザ扱い')+' ／ Web Push '+(e.support?'対応':'非対応')+' ／ 通知許可 '+e.permission;
-  if(s&&btn&&!btn.onclick)s.textContent='通知ボタンの初期化が未完了です。'+(firstError?'JavaScriptエラー：'+firstError:'アプリの読み込み状態を確認してください。');
+  if(s&&btn&&!btn.onclick)s.textContent='通知ボタンが初期化されていません。'+(window.__glinkStartupError||firstError?'エラー：'+(window.__glinkStartupError||firstError):'アプリ起動処理の中断が疑われます。');
  }
  window.addEventListener('load',()=>{showDiagnostics();setTimeout(showDiagnostics,1200);});
  document.addEventListener('click',e=>{
   if(e.target?.closest?.('#pushEnable'))setTimeout(()=>{
    const btn=document.getElementById('pushEnable'),s=status();
-   if(btn&&!btn.onclick&&s)s.textContent='通知ボタンの処理が読み込まれていません。'+(firstError?' エラー：'+firstError:'');
+   if(btn&&!btn.onclick&&s)s.textContent='通知ボタンの処理が読み込まれていません。'+(window.__glinkStartupError||firstError?' エラー：'+(window.__glinkStartupError||firstError):'');
   },0);
  },true);
 })();
