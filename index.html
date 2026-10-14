@@ -605,7 +605,25 @@ let loginSigninBusy=false;$('cloudSignin').onclick=async()=>{if(loginSigninBusy)
 $('cloudDownload').onclick=async()=>{try{if(!confirm('この端末のデータをクラウド最新版で置き換えます。先にバックアップしてください。続けますか？'))return;await cloudDownload()}catch(e){cloudStatus(e.message,true)}};
 $('cloudRefresh').onclick=async()=>{try{await cloudDownload()}catch(e){cloudStatus(e.message,true)}};
 $('cloudUpload').onclick=async()=>{try{if(activeRole!=='admin')throw Error('管理者のみ操作できます');if(!cloudSession)throw Error('ログインしてください');if(cloudDirty)throw Error('未送信の変更があります');const current=await readCloud();if(current.revision!==cloudRevision)throw Error('クラウドデータが更新されています。先に最新を読み込んでください');if(!confirm('【管理者専用】現在のクラウドデータを端末の内容で置き換えます。バックアップ済みですか？'))return;cloudReady=true;cloudDirty=true;await cloudCommit();if(!cloudDirty&&cloudReady)alert('クラウドに保存しました')}catch(e){cloudStatus(e.message,true)}};
-$('cloudSignout').onclick=()=>{cloudReady=false;cloudDirty=false;cloudSession=null;activeRole=null;cloudRevision=null;localStorage.removeItem('glink-cloud-session');cloudStatus('ログアウトしました。現在は端末内モードです。')};
+$('cloudSignout').onclick=async()=>{
+ if(cloudReady&&cloudDirty&&!confirm('未同期のデータがあります。データはこの端末に保護されますが、ログアウトしますか？'))return;
+ $('cloudSignout').disabled=true;
+ try{
+  if(cloudSession&&'serviceWorker'in navigator&&'PushManager'in window){
+   const registration=await navigator.serviceWorker.getRegistration('./');
+   const subscription=await registration?.pushManager?.getSubscription();
+   if(subscription){
+    await authorized(()=>cloudFetch('/rest/v1/push_devices?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&endpoint=eq.'+encodeURIComponent(subscription.endpoint),{method:'DELETE'}));
+    await subscription.unsubscribe();
+   }
+  }
+ }catch(e){console.warn('通知の解除を確認できませんでした',e);if(!confirm('通知の解除が確認できません。端末に以前のアカウントの通知が届く可能性があります。ログアウトを続けますか？')){$('cloudSignout').disabled=false;return}}
+ cloudReady=false;cloudSession=null;activeRole=null;cloudRevision=null;
+ // Do not clear pending team data or drafts when logging out.
+ localStorage.removeItem('glink-cloud-session');
+ cloudStatus('ログアウトしました。端末の未送信データは保持しています。');
+ $('cloudSignout').disabled=false;
+};
 document.addEventListener('visibilitychange',()=>{if(document.hidden)return;if(cloudReady&&cloudDirty&&!cloudBusy)cloudSchedule();else if(cloudReady&&!cloudDirty&&!cloudBusy)cloudDownload(true).catch(e=>cloudStatus(e.message,true))});
 setInterval(()=>{if(cloudReady&&!cloudDirty&&!cloudBusy&&!document.hidden)cloudDownload(true).catch(e=>cloudStatus(e.message,true))},20000);
 
@@ -1986,7 +2004,7 @@ async function pushRegister(subscription){
  const found=(existing||[]).find(x=>x.endpoint===subscription.endpoint);
  const result=found?await authorized(()=>cloudFetch('/rest/v1/push_devices?id=eq.'+encodeURIComponent(found.id),{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify(row)})):await authorized(()=>cloudFetch('/rest/v1/push_devices',{method:'POST',headers:{Prefer:'return=representation'},body:JSON.stringify(row)}));
  if(!Array.isArray(result)||result.length!==1)throw Error('通知端末を登録できませんでした');
- glinkPushDevice=result[0];pushMessage('端末登録が完了しました。テスト通知をお試しください');
+ glinkPushDevice=result[0];pushMessage('この端末の通知登録を保存しました。サーバーの配信設定完了後、テスト通知で受信を確認してください');
 }
 $('pushEnable').onclick=async()=>{
  $('pushEnable').disabled=true;
