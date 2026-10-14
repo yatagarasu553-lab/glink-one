@@ -1920,6 +1920,25 @@ function pushUiStatus(){
  if(activeRole!=='admin')$('pushAdmin').checked=false;
 }
 pushUiStatus();
+async function pushLoad(){
+ pushUiStatus();
+ if(!cloudSession||!cloudCfg.team){pushMessage('先にTEAM SYNCでログインしてください');return}
+ if(!pushOnHome())return;
+ try{
+  const reg=await navigator.serviceWorker.ready;
+  const subscription=await reg.pushManager.getSubscription();
+  if(!subscription){glinkPushDevice=null;pushMessage('通知は未設定です');return}
+  const devices=await authorized(()=>cloudFetch('/rest/v1/push_devices?user_id=eq.'+encodeURIComponent(cloudSession.user.id)+'&select=*&limit=20'));
+  glinkPushDevice=(devices||[]).find(row=>row.endpoint===subscription.endpoint)||null;
+  if(glinkPushDevice){
+   $('pushVisit').checked=glinkPushDevice.visit_alert!==false;
+   $('pushAdmin').checked=activeRole==='admin'&&glinkPushDevice.admin_alert!==false;
+   pushMessage(glinkPushDevice.enabled?'この端末の通知が有効です':'通知を停止しています');
+  }else pushMessage('この端末は未登録です');
+ }catch(e){pushMessage('通知の確認に失敗：'+e.message)}
+}
+const previousPushNavigate=navigate;
+navigate=function(page){previousPushNavigate(page);if(page==='pushSettings')pushLoad()};
 $('pushEnable').onclick=()=>alert('サーバーの配信設定が必要です。');
 
 </script></body></html>
