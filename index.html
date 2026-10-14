@@ -1939,6 +1939,23 @@ async function pushLoad(){
 }
 const previousPushNavigate=navigate;
 navigate=function(page){previousPushNavigate(page);if(page==='pushSettings')pushLoad()};
-$('pushEnable').onclick=()=>alert('サーバーの配信設定が必要です。');
+function pushDecodeKey(s){
+ const normalized=s.replace(/-/g,'+').replace(/_/g,'/');
+ return Uint8Array.from(atob(normalized.padEnd(Math.ceil(normalized.length/4)*4,'=')),c=>c.charCodeAt(0));
+}
+async function pushSubscribe(){
+ if(!cloudReady||!cloudSession)throw Error('先にTEAM SYNCへログインしてください');
+ if(!pushOnHome())throw Error('ホーム画面に追加したGLINK ONEから開いてください');
+ if(!('PushManager'in window)||!('Notification'in window))throw Error('通知非対応の端末です');
+ const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+ const permission=await Notification.requestPermission();
+ if(permission!=='granted')throw Error('通知が許可されませんでした');
+ return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
+}
+$('pushEnable').onclick=async()=>{
+ $('pushEnable').disabled=true;
+ try{const subscription=await pushSubscribe();pushMessage(subscription?'iPhoneの通知許可が完了しました。端末を登録しています…':'端末登録を確認できません')}catch(e){pushMessage(e.message)}
+ finally{$('pushEnable').disabled=false}
+};
 
 </script></body></html>
