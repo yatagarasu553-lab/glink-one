@@ -1909,7 +1909,7 @@ $('pageBack').onclick=()=>{
  const prev=navigationHistory[navigationHistory.length-1]||'home';
  navigate(prev);historyGoingBack=false;
 };
-const GLINK_PUSH_PUBLIC='BC7oB1qCF_2HWJDwwUqCjxo1QMtMcEi_v0NQ5ACllZEiNcMjhdfuYwmsp-NbxzguYpF5_HzBaY2xETF6ygL6ivQ';
+const GLINK_PUSH_PUBLIC='BBdqoIlAr6t9OfUDC4miZQtDpDyiblA7x7BVWmMTpcoTfIHPHsYzlaZLkvcRKOaWU9WUqBBwE015BXA5XhP4r9M';
 let glinkPushDevice=null;
 function pushOnHome(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
 function pushMessage(msg){$('pushStatus').textContent=msg}
@@ -2021,4 +2021,11 @@ $('pushDisable').onclick=async()=>{
  }catch(e){pushMessage('通知停止エラー：'+e.message)}
  finally{$('pushDisable').disabled=false}
 };
+
+function glinkPushOpenTarget(){
+ const target=new URLSearchParams(location.search).get('push');
+ if(!target||!['home','leads','team','pushSettings'].includes(target))return;
+ try{navigate(target)}catch(e){console.warn('通知先画面を開けませんでした',e)}
+}
+window.addEventListener('load',glinkPushOpenTarget,{once:true});
 </script></body></html>
