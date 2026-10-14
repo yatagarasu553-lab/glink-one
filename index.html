@@ -1909,7 +1909,7 @@ $('pageBack').onclick=()=>{
  const prev=navigationHistory[navigationHistory.length-1]||'home';
  navigate(prev);historyGoingBack=false;
 };
-const GLINK_PUSH_PUBLIC='BFocqlYDY1e_WaL89stHo3WKAUdMowRQ3WsOkWrUuo-iroMa_SO7rj-dy2_6BEASMg0MjaB0-dlWIIHeKTrXblQ';
+const GLINK_PUSH_PUBLIC='BC7oB1qCF_2HWJDwwUqCjxo1QMtMcEi_v0NQ5ACllZEiNcMjhdfuYwmsp-NbxzguYpF5_HzBaY2xETF6ygL6ivQ';
 let glinkPushDevice=null;
 function pushOnHome(){return matchMedia('(display-mode: standalone)').matches||navigator.standalone===true}
 function pushMessage(msg){$('pushStatus').textContent=msg}
@@ -1950,6 +1950,15 @@ async function pushSubscribe(){
  const permission=await Notification.requestPermission();
  const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
  if(permission!=='granted')throw Error('通知が許可されませんでした');
+ const existing=await reg.pushManager.getSubscription();
+ if(existing){
+  const key=existing.options?.applicationServerKey;
+  const expected=pushDecodeKey(GLINK_PUSH_PUBLIC);
+  const same=key&&new Uint8Array(key).length===expected.length&&new Uint8Array(key).every((v,i)=>v===expected[i]);
+  if(same)return existing;
+  if(!confirm('通知の署名キーを更新します。以前の通知登録を解除して再登録しますか？'))throw Error('通知の再登録をキャンセルしました');
+  await existing.unsubscribe();
+ }
  return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
 }
 let lastPushErrorReport=0;
