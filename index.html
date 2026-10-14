@@ -354,7 +354,7 @@ persist(); // Initial dashboard render is delayed until all modules are initiali
 // v3 opt-in cloud sync. The cloud document is versioned to protect against stale-device overwrites.
 const CLOUD_KEY='glink-one-v3-cloud';let activeRole=null;let cloudCfg={},cloudRevision=null,cloudReady=false,cloudBusy=false,cloudDirty=false,cloudTimer=null,cloudLastSaved='';
 try{cloudCfg=JSON.parse(localStorage.getItem(CLOUD_KEY)||'{}')}catch{cloudCfg={}};if(!cloudCfg.url)cloudCfg.url='https://olxapervogzqmigzyedo.supabase.co';if(!cloudCfg.key)cloudCfg.key='sb_publishable_uBvIrUpYxRda-RJDXV5Daw_kCBu4z0f';if(!cloudCfg.team)cloudCfg.team='cf18497a-3cf9-4813-96f2-f4e0fb6d6489'
-function cloudStatus(msg,bad=false){$('cloudStatus').className=bad?'warn':'notice';$('cloudStatus').textContent=msg;$('cloudBadge').textContent=cloudReady?(cloudDirty?'☁ 未同期':'☁ TEAM SYNC'):(cloudSession?'☁ 要確認':'LOCAL DEMO');$('cloudAccount').textContent=cloudSession?.user?.email||'';if($('loginCurrentStatus')){$('loginCurrentStatus').className=bad?'warn':'notice';$('loginCurrentStatus').textContent=msg}if($('loginAccountName'))$('loginAccountName').textContent=cloudSession?.user?.email?'ログインアカウント：'+cloudSession.user.email:'未ログイン';updateRoleUI()}
+function cloudStatus(msg,bad=false){$('cloudStatus').className=bad?'warn':'notice';$('cloudStatus').textContent=msg;$('cloudBadge').textContent=cloudReady?(cloudDirty?'☁ 未同期':'☁ TEAM SYNC'):(cloudSession?'☁ 要確認':'LOCAL DEMO');$('cloudAccount').textContent=cloudSession?.user?.email||'';if($('loginCurrentStatus')){$('loginCurrentStatus').className=bad?'warn':'notice';$('loginCurrentStatus').textContent=msg}if($('loginAccountName'))$('loginAccountName').textContent=cloudSession?.user?.email?'ログインアカウント：'+cloudSession.user.email:'未ログイン';updateRoleUI();syncHintUpdate()}
 function cloudValid(){return /^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/i.test(cloudCfg.url||'')&&!!cloudCfg.key&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cloudCfg.team||'')}
 function cloudHeaders(extra={}){return {'apikey':cloudCfg.key,'Authorization':'Bearer '+cloudSession.access_token,'Content-Type':'application/json',...extra}}
 let tokenRefreshPromise=null;
@@ -425,7 +425,31 @@ function drawRoster(){
 }
 
 async function loadStaffSubmissions(){if(!cloudSession||!cloudValid())return;const rows=await authorized(()=>cloudFetch('/rest/v1/staff_submissions?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=id,user_id,kind,payload,created_at&order=created_at.desc&limit=1000'));submittedRecords=Array.isArray(rows)?rows:[];try{render()}catch(e){console.error('GLINK submissions UI',e)}if(activeRole==='admin')try{refreshInsights()}catch(e){console.error('GLINK insights UI',e)}}
-async function saveStaffSubmission(kind,data){if(!cloudReady||!loggedStaffName)throw Error('共有同期と社員名の登録が必要です。管理者に確認してください');if(kind!=='deal'||activeRole!=='admin')data.staff=loggedStaffName;else if(!state.staff.includes(data.staff)&&data.staff!=='その他（外注など）')throw Error('登録する担当者を選択してください');await authorized(()=>cloudFetch('/rest/v1/staff_submissions',{method:'POST',headers:{'Prefer':'return=minimal'},body:JSON.stringify({team_id:cloudCfg.team,user_id:cloudSession.user.id,kind,payload:data})}));await loadStaffSubmissions()}
+const SUBMISSION_PENDING_KEY='glink-staff-submission-pending-v1';
+let submissionBusy=false;
+function submissionWarnPending(){
+ let pending=null;try{pending=JSON.parse(localStorage.getItem(SUBMISSION_PENDING_KEY)||'null')}catch{}
+ if(pending&&cloudSession?.user?.id===pending.user_id){
+  const hint=$('homeSyncHint');if(hint)hint.textContent='⚠ 前回の登録結果が未確認です';
+ }
+}
+async function saveStaffSubmission(kind,data){
+ if(!cloudReady||!loggedStaffName)throw Error('共有同期と社員名の登録が必要です。管理者に確認してください');
+ if(submissionBusy)throw Error('送信中です。完了までお待ちください');
+ if(kind!=='deal'||activeRole!=='admin')data.staff=loggedStaffName;
+ else if(!state.staff.includes(data.staff)&&data.staff!=='その他（外注など）')throw Error('登録する担当者を選択してください');
+ const outgoing={...data};
+ if(!outgoing.id)outgoing.id=typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID():String(Date.now())+'-'+Math.random().toString(36).slice(2);
+ const requestKey=outgoing.id;
+ submissionBusy=true;
+ try{
+  try{localStorage.setItem(SUBMISSION_PENDING_KEY,JSON.stringify({user_id:cloudSession.user.id,kind,request_key:requestKey,savedAt:new Date().toISOString()}))}catch{}
+  await authorized(()=>cloudFetch('/rest/v1/staff_submissions',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=minimal'},body:JSON.stringify({team_id:cloudCfg.team,user_id:cloudSession.user.id,kind,request_key:requestKey,payload:outgoing})}));
+  try{localStorage.removeItem(SUBMISSION_PENDING_KEY)}catch{}
+  await loadStaffSubmissions();
+ }catch(e){throw Error('送信結果を確認できません：'+e.message+'。連続で登録せず、最新の実績を確認してください。')}
+ finally{submissionBusy=false;syncHintUpdate();submissionWarnPending()}
+}
 function closeDealEditor(){$('dealEditOverlay').hidden=true;document.body.style.overflow=''}
 function editCloudDeal(id){
  const row=submittedRecords.find(x=>x.id===id&&x.kind==='deal');if(!row)return alert('実績が見つかりません');
@@ -533,7 +557,7 @@ $('staffSignup').onclick=async()=>{
  }catch(e){$('signupStatus').textContent='登録エラー：'+e.message}
 };
 async function readCloud(){return await authorized(async()=>{const d=await cloudFetch('/rest/v1/team_states?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=payload,revision,updated_at');if(!Array.isArray(d)||d.length!==1)throw Error('チームデータが見つからないか、アクセス権がありません');return d[0]})}
-async function cloudDownload(silent=false){const draft=hasPendingCloud();if(draft){cloudDirty=true;cloudReady=false;cloudStatus('未送信のデータがこの端末に残っています。「コピペ」のバックアップ欄から安全に再同期できます。',true);showPendingRecovery();if(!silent)alert('未送信の変更が端末に残っています。安全のため最新情報での上書きを停止しました。');return;}if(cloudDirty){if(silent)return;throw Error('未送信の変更があります。先に同期してください。')}const r=await readCloud();if(!valid(r.payload))throw Error('クラウド側のデータ形式が不正です');state=r.payload;upgrade();cloudRevision=r.revision;cloudLastSaved=r.updated_at||'';cloudDirty=false;localStorage.setItem(KEY,JSON.stringify(state));cloudReady=true;try{render()}catch(e){console.error('GLINK dashboard render',e)}try{drawRoster();drawDailyGoalEditor()}catch(e){console.error('GLINK admin UI',e)}await loadStaffSubmissions();try{await drawApprovalsAndAudit()}catch(e){console.error('GLINK audit',e)}try{listStoreBackups();refreshInsights()}catch(e){console.error('GLINK analysis',e)}cloudStatus('同期中：最新データを取得しました（版 '+cloudRevision+'）');if(!silent)alert('最新のチームデータを読み込みました')}
+async function cloudDownload(silent=false){const draft=hasPendingCloud();if(draft){cloudDirty=true;cloudReady=false;cloudStatus('未送信のデータがこの端末に残っています。「コピペ」のバックアップ欄から安全に再同期できます。',true);showPendingRecovery();if(!silent)alert('未送信の変更が端末に残っています。安全のため最新情報での上書きを停止しました。');return;}if(cloudDirty){if(silent)return;throw Error('未送信の変更があります。先に同期してください。')}const r=await readCloud();if(!valid(r.payload))throw Error('クラウド側のデータ形式が不正です');state=r.payload;upgrade();cloudRevision=r.revision;cloudLastSaved=r.updated_at||'';cloudDirty=false;localStorage.setItem(KEY,JSON.stringify(state));cloudReady=true;try{render()}catch(e){console.error('GLINK dashboard render',e)}try{drawRoster();drawDailyGoalEditor()}catch(e){console.error('GLINK admin UI',e)}await loadStaffSubmissions();submissionWarnPending();try{await drawApprovalsAndAudit()}catch(e){console.error('GLINK audit',e)}try{listStoreBackups();refreshInsights()}catch(e){console.error('GLINK analysis',e)}cloudStatus('同期中：最新データを取得しました（版 '+cloudRevision+'）');if(!silent)alert('最新のチームデータを読み込みました')}
 async function cloudCommit(){if(activeRole!=='admin')return;if(!cloudReady||!cloudSession||cloudBusy||!cloudDirty)return;cloudBusy=true;try{await authorized(async()=>{const copy=JSON.parse(JSON.stringify(state));const rev=cloudRevision;const rows=await cloudFetch('/rest/v1/team_states?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&revision=eq.'+rev,{method:'PATCH',headers:{'Prefer':'return=representation'},body:JSON.stringify({payload:copy,revision:rev+1})});if(!Array.isArray(rows)||rows.length!==1){cloudReady=false;cloudStatus('別の端末で更新がありました。バックアップ保存後「最新情報を取得」を押してください。自動上書きは停止しました。',true);return}cloudRevision=rev+1;cloudDirty=JSON.stringify(state)!==JSON.stringify(copy);if(cloudDirty)savePendingCloud();else clearPendingCloud();cloudStatus('同期完了：版 '+cloudRevision);});}catch(e){cloudReady=false;cloudStatus('同期エラー：'+e.message+'。未送信データは端末に保護されています。再接続後に管理者が確認してください。',true)}finally{cloudBusy=false;if(cloudDirty&&cloudReady)cloudSchedule()}}
 function cloudSchedule(){clearTimeout(cloudTimer);if(cloudDirty&&cloudReady){cloudStatus('クラウドに保存中…');cloudTimer=setTimeout(cloudCommit,850)}}
 const DRAFT_KEY='glink-pending-cloud-'+cloudCfg.team;
@@ -1640,6 +1664,6 @@ function syncHintUpdate(){
  el.className='home-sync-hint '+(cloudReady&&!cloudDirty?'synced':'pending');
 }
 window.addEventListener('online',syncHintUpdate);window.addEventListener('offline',syncHintUpdate);
-syncHintUpdate();
+syncHintUpdate();submissionWarnPending();
 
 </script></body></html>
