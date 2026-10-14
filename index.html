@@ -1760,8 +1760,13 @@ function bulkReadRow(){
 }
 function bulkRender(){
  $('bulkRows').innerHTML=bulkRows.map((r,i)=>'<div class="bulk-item" data-bulk-row="'+escapeHtml(r.id)+'"><div class="row"><b>案件 '+(i+1)+'</b><button type="button" class="tinybtn" data-bulk-remove="'+escapeHtml(r.id)+'" '+(bulkRows.length===1?'disabled':'')+'>削除</button></div><div class="two"><label>ブランド<select data-bulk-field="carrier"><option value="YM" '+(r.carrier==='YM'?'selected':'')+'>Y!mobile</option><option value="SB" '+(r.carrier==='SB'?'selected':'')+'>SoftBank</option></select></label><label>契約区分<select data-bulk-field="type">'+['対外','機変','YS'].map(k=>'<option '+(k===r.type?'selected':'')+'>'+k+'</option>').join('')+'</select></label></div><div class="bulk-numbers">'+[['catchDeals','キャッチ'],['closeDeals','クローズ'],['sales','売上（円）'],['adc','ADC'],['insurance','あんスマ']].map(([key,label])=>'<label>'+label+'<input type="number" min="0" step="1" max="'+(key==='sales'?'100000000':'100')+'" data-bulk-field="'+key+'" value="'+(Number(r[key])||0)+'"></label>').join('')+'</div><label>店舗報告との関係<select data-bulk-field="storeInclusion"><option value="included" '+(r.storeInclusion==='included'?'selected':'')+'>通常（店舗報告に含む）</option><option value="extra" '+(r.storeInclusion==='extra'?'selected':'')+'>未反映の別案件</option></select></label><label>メモ<input data-bulk-field="memo" maxlength="250" value="'+escapeHtml(r.memo||'')+'" placeholder="任意・個人情報禁止"></label><div class="muted micro" data-bulk-count="'+escapeHtml(r.id)+'"></div></div>').join('');
- $('bulkRows').querySelectorAll('input,select').forEach(el=>{el.oninput=()=>{bulkReadRow();bulkUpdateTotals();bulkSaveDraft()};el.onchange=el.oninput});
+ $('bulkRows').querySelectorAll('input,select').forEach(el=>{el.disabled=bulkPendingConfirmation||bulkSending;el.oninput=()=>{bulkReadRow();bulkUpdateTotals();bulkSaveDraft()};el.onchange=el.oninput});
  $('bulkRows').querySelectorAll('[data-bulk-remove]').forEach(btn=>btn.onclick=()=>{if(bulkPendingConfirmation)return alert('送信結果が不明なため変更できません。先に保存状況を確認してください');bulkReadRow();bulkRows=bulkRows.filter(r=>r.id!==btn.dataset.bulkRemove);bulkRender();bulkSaveDraft()});
+ $('bulkDate').disabled=bulkPendingConfirmation||bulkSending;
+ $('bulkStaff').disabled=bulkPendingConfirmation||bulkSending||(!!cloudSession&&activeRole!=='admin');
+ $('bulkAddRow').disabled=bulkPendingConfirmation||bulkSending;
+ $('bulkReset').disabled=bulkPendingConfirmation||bulkSending;
+ $('bulkSubmit').textContent=bulkPendingConfirmation?'前回の保存結果を確認する':'すべて確認して一括登録';
  bulkUpdateTotals();
 }
 function bulkUpdateTotals(){
@@ -1811,6 +1816,10 @@ $('bulkSubmit').onclick=async()=>{
   return record;
  });
  if(errors.length)return alert(errors.join('\n'));
+ if(rows.length>1){const sig=r=>[r.carrier,r.type,r.catchDeals,r.closeDeals,r.sales,r.adc,r.insurance,r.storeInclusion].join(':');const ids=records.map(sig);if(new Set(ids).size!==ids.length&&!confirm('【重複注意】一括入力内に同じ内容の案件が複数あります。別契約として登録しますか？'))return}
+ const already=[...state.entries,...(cloudSession?submittedRecords.filter(x=>x.kind==='deal').map(x=>x.payload):[])];
+ const existing=records.some(r=>already.some(e=>e.date===date&&e.staff===staff&&e.carrier===r.carrier&&e.type===r.type&&Number(e.catchDeals)===r.catchDeals&&Number(e.closeDeals)===r.closeDeals&&Number(e.sales)===r.sales&&Number(e.adc)===r.adc&&Number(e.insurance)===r.insurance));
+ if(existing&&!confirm('【登録済み注意】同じ担当者・日付・区分・件数・売上の実績が既にあります。別案件の場合のみ続けてください。'))return;
  const sumCount=records.reduce((v,r)=>v+r.deals,0),sumSales=records.reduce((v,r)=>v+r.sales,0);
  const summary=records.map((r,i)=>(i+1)+'. '+r.carrier+' '+r.type+' / '+r.deals+'件 / '+yen(r.sales)).join('\n');
  if(!confirm('【一括登録の最終確認】\n担当：'+staff+'　日付：'+date+'\n'+summary+'\n合計 '+sumCount+'件・'+yen(sumSales)+'\n\nこの内容で一括登録しますか？'))return;
@@ -1819,7 +1828,7 @@ $('bulkSubmit').onclick=async()=>{
  try{
   if(cloudSession){
    bulkBatchId=newId();const payload=records.map((r,i)=>({team_id:cloudCfg.team,user_id:cloudSession.user.id,kind:'deal',request_key:bulkBatchId+'-'+i,payload:{...r,id:bulkBatchId+'-'+i,bulkBatchId}}));
-   bulkPendingConfirmation=true;bulkSaveDraft();
+   bulkPendingConfirmation=true;bulkSaveDraft();bulkRender();
    const saved=await authorized(()=>cloudFetch('/rest/v1/staff_submissions',{method:'POST',headers:{Prefer:'resolution=ignore-duplicates,return=representation'},body:JSON.stringify(payload)}));
    // Empty response is allowed only after verification, never assume success.
    if(!Array.isArray(saved))throw Error('一括登録の応答を確認できません');
@@ -1829,7 +1838,7 @@ $('bulkSubmit').onclick=async()=>{
   }else{state.entries.push(...records.map(r=>({...r,id:newId()})));persist();render()}
   bulkRows=[bulkBlankRow()];bulkRender();bulkSaveDraft();$('bulkStatus').textContent='保存完了：'+records.length+'案件・換算'+sumCount+'件を登録しました';
  }catch(e){$('bulkStatus').textContent='結果を確認できません：'+e.message+'。自動再送せず「一括登録」から保存状況を確認してください。';bulkSaveDraft()}
- finally{bulkSending=false;$('bulkSubmit').disabled=false}
+ finally{bulkSending=false;$('bulkSubmit').disabled=false;bulkRender()}
 };
 try{const d=JSON.parse(localStorage.getItem(BULK_DRAFT_KEY)||'null');if(d&&Array.isArray(d.rows)&&d.rows.length&&d.rows.length<=20&&(!d.userId||!cloudSession||d.userId===cloudSession.user?.id)){bulkRows=d.rows;$('bulkDate').value=d.date||nowDay();bulkBatchId=d.batchId||null;bulkPendingConfirmation=!!d.pending;bulkStart();if(d.staff&&[...$('bulkStaff').options].some(o=>o.value===d.staff))$('bulkStaff').value=d.staff;if(bulkPendingConfirmation)$('bulkStatus').textContent='前回の一括登録結果が未確認です。「すべて確認して一括登録」で保存状況を確認してください。'}else bulkStart()}catch(e){bulkStart()}
 const navBulk=navigate;navigate=function(page){navBulk(page);if(page==='register')bulkSyncStaff()};
