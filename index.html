@@ -1947,8 +1947,8 @@ async function pushSubscribe(){
  if(!cloudReady||!cloudSession)throw Error('先にTEAM SYNCへログインしてください');
  if(!pushOnHome())throw Error('ホーム画面に追加したGLINK ONEから開いてください');
  if(!('PushManager'in window)||!('Notification'in window))throw Error('通知非対応の端末です');
- const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
  const permission=await Notification.requestPermission();
+ const reg=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
  if(permission!=='granted')throw Error('通知が許可されませんでした');
  return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:pushDecodeKey(GLINK_PUSH_PUBLIC)});
 }
