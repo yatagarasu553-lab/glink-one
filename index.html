@@ -268,7 +268,7 @@ const newId=()=>typeof crypto!=='undefined'&&crypto.randomUUID?crypto.randomUUID
 const TARGET_KEYS=[['sales','COSTCO売上',13604000],['external','対外新規',230],['sb','SB対外',79],['ym','YM対外',151],['device','機変',27],['ys','YS',31],['insurance','保険',63],['adc','ADC',54],['fixed','固定',30],['air','（内 Air）',null],['electric','でんき',18],['shs','SHS',47],['paytoku','ペイトク50/無制限',71]];
 const DAILY_KEYS=[['sy','SY合算'],['shsMnp','S HS MNP対外'],['shsNew','S HS 純新規'],['simMnp','S SIM MNP 対外'],['simNew','S SIM 新規 対外'],['yMnp','Y MNP 対外'],['yNew','Y 新規'],['device','機変'],['ys','YS'],['insurance','保険'],['adc','ADC'],['goods','物販'],['fixed','固定'],['electric','でんき'],['sales','Costco売上']];
 const DEFAULT_TARGETS=Object.fromEntries(TARGET_KEYS.map(([k,,n])=>[k,n]));
-function upgrade(){if(!state.targets)state.targets={'2026-10':{...DEFAULT_TARGETS}};if(!state.storeReports)state.storeReports=[];if(!state.dailyTargets||typeof state.dailyTargets!=='object')state.dailyTargets={};}
+function upgrade(){if(!state.targets)state.targets={'2026-10':{...DEFAULT_TARGETS}};if(!state.storeReports)state.storeReports=[];if(!state.dailyTargets||typeof state.dailyTargets!=='object')state.dailyTargets={};if(!state.manualMonthActuals||typeof state.manualMonthActuals!=='object')state.manualMonthActuals={};}
 upgrade();
 const parseNum=raw=>{const t=String(raw??'').replace(/[\s,，¥￥()（）\uE000-\uF8FF]/g,'');const match=t.match(/-?\d+(?:\.\d+)?/);return match?Number(match[0]):null};
 function cleanLine(line){return line.normalize('NFKC').replace(/[\uE000-\uF8FF]/g,'').replace(/\t/g,' ').trim()}
@@ -320,6 +320,7 @@ function effectiveMonth(m){
   }
   if(total!==undefined)sums[k]=total;
  }
+ const manual=state.manualMonthActuals?.[m]||{};for(const key of ['shs','paytoku'])if(Number.isSafeInteger(manual[key])&&manual[key]>=0)sums[key]=manual[key];
  return {sums,snap,rows};
 }
 function renderExternalSummary(){
@@ -343,8 +344,22 @@ function renderReconciliation(){
  el.innerHTML=html;
 }
 $('reconcileDate').value=nowDay();$('reconcileDate').onchange=renderReconciliation;
-function renderPasteExtras(){const m=nowDay().slice(0,7), goals=state.targets[m]||{},eff=effectiveMonth(m);$('goalSummary').innerHTML=TARGET_KEYS.map(([k,title])=>{const g=goals[k],n=eff.sums[k],known=n!==undefined;return `<div class="goalrow"><div>${escapeHtml(title)}<div class="muted micro">${known?(k==='sales'?yen(n):n+'件'):'未入力'} / ${g===null||g===undefined?'目標未設定':k==='sales'?yen(g):g+'件'}</div></div><b>${known&&g?pctLabel(n,g):'—'}</b><div class="bar"><div style="width:${known&&g?Math.min(100,n/g*100):0}%"></div></div></div>`}).join('')+(eff.snap?`<p class="notice">${escapeHtml(eff.snap.date)} の累計報告を基準に表示。後日の当日結果を自動加算しています（同じ日付の再保存は二重計上しません）。</p>`:'<p class="notice">累計報告がない項目は、保存した当日結果の合計を表示します。</p>');
+function renderPasteExtras(){const m=nowDay().slice(0,7), goals=state.targets[m]||{},eff=effectiveMonth(m);$('goalSummary').innerHTML=TARGET_KEYS.map(([k,title])=>{const g=goals[k],n=eff.sums[k],known=n!==undefined;return `<div class="goalrow"><div>${escapeHtml(title)}<div class="muted micro">${known?(k==='sales'?yen(n):n+'件'):'未入力'} / ${g===null||g===undefined?'目標未設定':k==='sales'?yen(g):g+'件'}</div>${(k==='shs'||k==='paytoku')&&activeRole==='admin'?`<button type="button" class="tinybtn" data-month-actual-edit="${k}" aria-label="${escapeHtml(title)}の今月実績を編集">✎ 実績編集</button>`:''}</div><b>${known&&g?pctLabel(n,g):'—'}</b><div class="bar"><div style="width:${known&&g?Math.min(100,n/g*100):0}%"></div></div></div>`}).join('')+(eff.snap?`<p class="notice">${escapeHtml(eff.snap.date)} の累計報告を基準に表示。後日の当日結果を自動加算しています（同じ日付の再保存は二重計上しません）。</p>`:'<p class="notice">累計報告がない項目は、保存した当日結果の合計を表示します。</p>');
 
+ $('goalSummary').querySelectorAll('[data-month-actual-edit]').forEach(button=>button.onclick=()=>{
+  if(activeRole!=='admin'||!cloudSession||!cloudReady||cloudDirty){alert('管理者としてTEAM SYNCの同期完了後に編集してください');return}
+  const key=button.dataset.monthActualEdit;if(!['shs','paytoku'].includes(key))return;
+  const month=nowDay().slice(0,7),current=effectiveMonth(month).sums[key]??0;
+  const label=key==='shs'?'SHS':'ペイトク50/無制限';
+  const raw=prompt(month+' の'+label+'実績（件数）\n現在：'+current+'件\n※月間目標・日報履歴は変更しません',String(current));
+  if(raw===null)return;
+  const input=raw.trim();const value=Number(input);
+  if(!/^\d+$/.test(input)||!Number.isSafeInteger(value)||value>100000)return alert('0〜100000の整数を入力してください');
+  if(!confirm(label+'の今月実績を '+value+'件 に変更しますか？'))return;
+  state.manualMonthActuals=state.manualMonthActuals||{};
+  state.manualMonthActuals[month]={...(state.manualMonthActuals[month]||{}),[key]:value};
+  persist();renderPasteExtras();$('goalSummary').insertAdjacentHTML('afterbegin','<p class="muted micro">✓ '+escapeHtml(label)+'：'+value+'件に変更しました。TEAM SYNCの同期状況をご確認ください。</p>');
+ });
  const current=state.storeReports.find(r=>r.date===nowDay()), currentDay=current?.day||{};
  if(eff.rows.length){$('totalDeals').textContent=eff.sums.external===undefined?'—':eff.sums.external+'件';$('dealSub').textContent=`SB対外 ${eff.sums.sb??'—'} / YM対外 ${eff.sums.ym??'—'}（店舗報告）`;$('totalSales').textContent=eff.sums.sales===undefined?'—':yen(eff.sums.sales);$('adcMetric').textContent=eff.sums.adc===undefined?'—':eff.sums.adc+'件';$('insuranceMetric').textContent=eff.sums.insurance===undefined?'—':eff.sums.insurance+'件';$('goalPct').textContent=eff.sums.external!==undefined?pctLabel(eff.sums.external,goals.external):'—';$('goalBar').style.width=eff.sums.external!==undefined&&goals.external?Math.min(100,eff.sums.external/goals.external*100)+'%':'0%';$('goalCount').textContent=`${eff.sums.external??'—'} / ${goals.external??'—'}件`;$('remaining').textContent=eff.sums.external!==undefined&&goals.external!=null?'残り '+Math.max(0,goals.external-eff.sums.external)+'件':'未集計';$('todayDeals').textContent=currentDay.sy===undefined?'—':currentDay.sy+'件';$('todaySales').textContent=currentDay.sales===undefined?'未入力':yen(currentDay.sales);$('sbTotal').textContent=eff.sums.sb===undefined?'—':eff.sums.sb+'件';$('ymTotal').textContent=eff.sums.ym===undefined?'—':eff.sums.ym+'件';}
  renderDailyGoals();
