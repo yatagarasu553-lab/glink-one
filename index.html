@@ -83,7 +83,13 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 #home #homeTodayPanel{display:none!important}
 #home .home-hero-main>div:has(#homeHeroSales){display:none!important}
 #home .home-hero-main{grid-template-columns:minmax(0,1fr)!important}
-#printDocs #printDocFavoritesPanel,#printDocs #printDocRecentPanel{border-color:#3a597c;background:linear-gradient(145deg,#19334f,#13263e)}#printDocs #printDocFavoritesPanel .entry,#printDocs #printDocRecentPanel .entry{display:flex;flex-wrap:wrap;gap:10px;align-items:center}#printDocs #printDocFavoritesPanel .print-doc-name,#printDocs #printDocRecentPanel .print-doc-name{flex:1;min-width:145px}#printDocs #printDocFavoritesPanel .tinybtn,#printDocs #printDocRecentPanel .tinybtn{min-height:42px}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+#printDocs #printDocFavoritesPanel,#printDocs #printDocRecentPanel{border-color:#3a597c;background:linear-gradient(145deg,#19334f,#13263e)}#printDocs #printDocFavoritesPanel .entry,#printDocs #printDocRecentPanel .entry{display:flex;flex-wrap:wrap;gap:10px;align-items:center}#printDocs #printDocFavoritesPanel .print-doc-name,#printDocs #printDocRecentPanel .print-doc-name{flex:1;min-width:145px}#printDocs #printDocFavoritesPanel .tinybtn,#printDocs #printDocRecentPanel .tinybtn{min-height:42px}
+/* Numeric step controls: always keep minus, number and plus on one line. */
+.mobile-counter{display:grid;grid-template-columns:46px minmax(0,1fr) 46px;gap:8px;align-items:stretch;width:100%;min-width:0}
+.mobile-counter>input{width:100%!important;min-width:0!important;height:48px;margin:0;text-align:center;appearance:textfield;-moz-appearance:textfield}
+.mobile-counter>input::-webkit-inner-spin-button,.mobile-counter>input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.mobile-counter>button{width:46px;min-width:46px;min-height:48px;margin:0;padding:6px!important;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="panel" id="homeTodayPanel"><div class="sectiontitle">今日の営業状況</div><div class="grid"><div class="metric"><span>本日の契約</span><strong id="todayDeals">0件</strong></div><div class="metric"><span>本日の売上</span><strong id="todaySales">¥0</strong></div></div><button class="btn wide" onclick="navigate('register')">＋ 実績を登録する</button></div><div class="panel home-lead-preview"><div class="row"><b>📅 直近の再来店予定</b><button type="button" class="tinybtn" onclick="navigate('leads')">カレンダーを見る ›</button></div><div class="home-lead-tabs"><button type="button" id="homeLeadTabToday" class="tinybtn" aria-pressed="true">今日</button><button type="button" id="homeLeadTabTomorrow" class="tinybtn" aria-pressed="false">明日</button></div><div id="homeLeadPreview" class="micro muted">予定を読み込み中…</div></div>
@@ -941,7 +947,7 @@ function setupMobileCounters(){
  for(const id of ['catchDeals','closeDeals','adc','insurance','catchCount','stopCount','inviteCount','talkCount']){
   const field=$(id);if(!field||field.dataset.counterReady)return;
   field.dataset.counterReady='1';field.inputMode='numeric';
-  const wrapper=document.createElement('div');wrapper.className='row';wrapper.style.gap='8px';
+  const wrapper=document.createElement('div');wrapper.className='mobile-counter';
   field.parentNode.insertBefore(wrapper,field);wrapper.appendChild(field);field.style.minWidth='0';
   for(const delta of [-1,1]){
    const b=document.createElement('button');b.type='button';b.className='tinybtn';b.textContent=delta<0?'−':'＋';b.style.fontSize='21px';b.style.minWidth='46px';b.style.padding='10px';
