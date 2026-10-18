@@ -78,6 +78,11 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 #home .home-view-heading{margin-top:20px;border-top:1px solid #304762;padding-top:15px}
 #home .home-view-heading b{font-size:15px}
 #home.home-compact #homeTodayPanel{display:block!important}
+
+/* User-requested home visibility: preserve DOM and calculation data for later restoration. */
+#home #homeTodayPanel{display:none!important}
+#home .home-hero-main>div:has(#homeHeroSales){display:none!important}
+#home .home-hero-main{grid-template-columns:minmax(0,1fr)!important}
 </style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
