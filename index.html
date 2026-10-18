@@ -29,10 +29,10 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 #team.active{display:flex;flex-direction:column;gap:4px}
 #team>.heading{order:0}
 #team>#adminOpsPanel{order:1;border-color:#3d709b;background:linear-gradient(135deg,#1a3457,#12243b)}
-#team>.panel:nth-of-type(2){order:2}
-#team>.panel:nth-of-type(1){order:3}
+#team>.panel:nth-child(3){order:2}
+#team>.panel:nth-child(2){order:3}
 #team>.panel[data-admin-only]:not(#adminOpsPanel){order:4}
-#team>.panel:nth-of-type(3){order:5}
+#team>.panel:nth-child(4){order:5}
 #team>.panel:last-of-type{order:6}
 #adminOpsPanel .sectiontitle{font-size:17px;margin-bottom:7px}
 #adminOpsPanel .admin-ops-actions{gap:10px;margin-top:13px}
