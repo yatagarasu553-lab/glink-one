@@ -43,6 +43,30 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 #team #pendingApprovals,#team #auditHistory,#team #deletedDealHistory{overflow-wrap:anywhere}
 @media(min-width:650px){#team>.panel{width:100%}}
 @media(max-width:390px){#adminOpsPanel .admin-ops-actions button{font-size:12px;min-height:62px}}
+
+/* GLINK ONE unified mobile UI — visual refinements only */
+#home,#register,#leads{--ui-border:#334c6e;--ui-muted:#b0c4dc}
+#home>.heading,#register>.heading,#leads>.heading{margin:18px 0 16px}
+#home>.heading h1,#register>.heading h1,#leads>.heading h1{font-size:clamp(23px,6vw,28px);font-weight:850;letter-spacing:-.65px}
+#home>.panel,#register>.panel,#leads>.panel,#register>details.panel,#leads .lead-cal-panel{background:linear-gradient(155deg,#172b45 0%,#111e32 100%);border:1px solid #324b6d;border-radius:18px;padding:clamp(14px,3.8vw,19px);box-shadow:0 8px 24px #02081625;margin:12px 0}
+#home .sectiontitle,#register .sectiontitle,#leads .sectiontitle{font-weight:800;line-height:1.4;letter-spacing:-.25px}
+#home .muted.micro,#register .muted.micro,#leads .muted.micro{line-height:1.6}
+#home .btn,#register .btn,#leads .btn{min-height:47px;border-radius:12px}
+#home .tinybtn,#register .tinybtn,#leads .tinybtn{min-height:35px}
+#register input,#register select,#register textarea,#leads input,#leads select,#leads textarea{min-height:46px;border-color:#466181;background:#0d1b30}
+#register textarea,#leads textarea{min-height:90px}
+#register input:focus-visible,#register select:focus-visible,#register textarea:focus-visible,#leads input:focus-visible,#leads select:focus-visible,#leads textarea:focus-visible{outline:2px solid #72baf7;outline-offset:1px}
+#register label,#leads label{color:#c4d5e9;font-size:12px;line-height:1.6}
+#home .metric{background:linear-gradient(150deg,#1d3553,#182941);border:1px solid #344d6e;border-radius:15px}
+#home .metric strong{letter-spacing:-.6px;line-height:1.25}
+#home .home-summary-actions button,#home .home-shortcuts button{min-height:43px}
+#register .bulk-item,#leads .lead-card{border-color:#345071;border-radius:14px}
+#register .entry-jumpbar,#leads .entry-jumpbar{margin-bottom:14px;gap:8px}
+#register .entry-jumpbar button,#leads .entry-jumpbar button{min-height:44px;background:#203d5f;border-color:#466b93;color:#f0f7ff}
+#leads .lead-cal-nav button{min-height:38px}
+#leads .lead-actions button{min-height:38px}
+@media(max-width:420px){#home .metric{padding:12px}#home .metric strong{font-size:clamp(19px,5.6vw,24px)}#register .two,#leads .two{gap:9px}}
+@media(prefers-reduced-motion:reduce){#home *,#register *,#leads *{scroll-behavior:auto!important}}
 </style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
