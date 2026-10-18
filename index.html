@@ -155,6 +155,23 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 @media(display-mode:standalone){
  header{padding-top:calc(21px + env(safe-area-inset-top,0px))}
 }
+
+/* Report iPhone spacing correction v2: clear status bar and separate stepper outlines */
+@media(display-mode:standalone){
+ #reports.report-executive{padding-top:36px}
+}
+#reports.report-executive .heading{margin-bottom:18px;min-width:0}
+#reports.report-executive .report-eyebrow{line-height:1.5;overflow-wrap:anywhere}
+#reports.report-executive .report-number-card{padding:12px 10px!important;overflow:visible}
+#reports.report-executive .report-number-card .mobile-counter{display:grid!important;grid-template-columns:32px minmax(0,1fr) 32px!important;column-gap:8px!important;align-items:center!important;width:100%;min-width:0}
+#reports.report-executive .report-number-card .mobile-counter>button{width:32px!important;min-width:0!important;height:46px!important;border-radius:9px!important;padding:0!important;flex-shrink:0}
+#reports.report-executive .report-number-card .mobile-counter>input{min-width:0!important;width:100%!important;height:46px!important;margin:0!important;padding:0 2px!important;border-radius:9px!important;box-sizing:border-box!important}
+@media(max-width:390px){
+ #reports.report-executive .report-numbers{gap:10px}
+ #reports.report-executive .report-number-card{padding:11px 7px!important}
+ #reports.report-executive .report-number-card .mobile-counter{grid-template-columns:29px minmax(0,1fr) 29px!important;column-gap:6px!important}
+ #reports.report-executive .report-number-card .mobile-counter>button{width:29px!important}
+}
 </style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
