@@ -13,7 +13,37 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 
 /* Home: quick glance at upcoming appointments */
 .home-lead-preview{margin-top:10px}.home-lead-tabs{display:flex;gap:8px;margin:12px 0}.home-lead-tabs button[aria-pressed="true"]{background:#235486;border-color:#5fb8fb;color:#fff}.home-lead-item{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid #2d425f}.home-lead-item strong{font-size:14px;color:#eff6ff}.home-lead-item small{display:block;color:#91a8c7;margin-top:4px}.home-lead-badge{flex-shrink:0;color:#91e5c4;background:#1a3a47;border-radius:8px;padding:5px 8px;font-size:11px;font-weight:700}.home-lead-foot{margin-top:8px;color:#a6bad5;font-size:12px}
-.entry-jumpbar{display:flex;gap:7px;overflow-x:auto;margin:5px 0 12px;padding:4px 0 8px}.entry-jumpbar button{flex:0 0 auto;background:#1b3451;color:#e5f1ff;border:1px solid #3a6087;border-radius:11px;padding:11px 13px;min-height:43px;font-size:12px;font-weight:700}.admin-ops-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-ops-actions button{border:1px solid #416184;background:#1c3655;border-radius:11px;color:#ebf6ff;padding:12px 8px;min-height:52px;font-size:12px;font-weight:700}@media(max-width:350px){.admin-ops-actions{grid-template-columns:1fr}}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+.entry-jumpbar{display:flex;gap:7px;overflow-x:auto;margin:5px 0 12px;padding:4px 0 8px}.entry-jumpbar button{flex:0 0 auto;background:#1b3451;color:#e5f1ff;border:1px solid #3a6087;border-radius:11px;padding:11px 13px;min-height:43px;font-size:12px;font-weight:700}.admin-ops-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-ops-actions button{border:1px solid #416184;background:#1c3655;border-radius:11px;color:#ebf6ff;padding:12px 8px;min-height:52px;font-size:12px;font-weight:700}@media(max-width:350px){.admin-ops-actions{grid-template-columns:1fr}}
+/* GLINK ONE layout refinement v1: presentation only, no data or auth changes */
+:root{--glink-line:#314967;--glink-card:#14243b;--glink-soft:#1b304d}
+.screen>.heading{margin:18px 0 18px;gap:10px}
+.screen>.heading h1{font-size:clamp(22px,5.5vw,27px);font-weight:850;letter-spacing:-.7px}
+.screen>.heading .muted{line-height:1.55}
+.screen>.panel{background:linear-gradient(156deg,#162840,#111f33);border-color:#2d4564;border-radius:18px;padding:clamp(14px,3.8vw,19px);box-shadow:0 9px 28px #01081226}
+.screen>.panel .sectiontitle{letter-spacing:-.2px;line-height:1.5}
+.screen>.panel .btn{min-height:44px}
+.screen>.panel .tinybtn{min-height:34px}
+.screen>.panel .row{min-width:0;flex-wrap:wrap}
+.screen>.panel .muted.micro{line-height:1.55}
+#team{display:none}
+#team.active{display:flex;flex-direction:column;gap:4px}
+#team>.heading{order:0}
+#team>#adminOpsPanel{order:1;border-color:#3d709b;background:linear-gradient(135deg,#1a3457,#12243b)}
+#team>.panel:nth-of-type(2){order:2}
+#team>.panel:nth-of-type(1){order:3}
+#team>.panel[data-admin-only]:not(#adminOpsPanel){order:4}
+#team>.panel:nth-of-type(3){order:5}
+#team>.panel:last-of-type{order:6}
+#adminOpsPanel .sectiontitle{font-size:17px;margin-bottom:7px}
+#adminOpsPanel .admin-ops-actions{gap:10px;margin-top:13px}
+#adminOpsPanel .admin-ops-actions button{min-height:66px;background:#223f61;border:1px solid #41678f;border-radius:13px;font-size:13px;text-align:center}
+#adminOpsPanel .admin-ops-actions button:active{background:#315a84}
+#team #cloudStatus{border-radius:12px;line-height:1.5}
+#team #rosterGrid .entry{border-radius:12px}
+#team #pendingApprovals,#team #auditHistory,#team #deletedDealHistory{overflow-wrap:anywhere}
+@media(min-width:650px){#team>.panel{width:100%}}
+@media(max-width:390px){#adminOpsPanel .admin-ops-actions button{font-size:12px;min-height:62px}}
+</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="home-quick"><div class="home-quick-head"><b>クイックアクセス</b><button type="button" class="tinybtn" id="homeQuickEdit">並び替え・編集</button></div><div class="home-shortcuts" id="homeShortcutList"></div><div id="homeQuickSettings" class="home-quick-settings" hidden><p class="muted micro">使う機能を最大6個選択し、上下ボタンで順番を変更します。この端末だけの設定です。</p><div id="homeQuickOptions"></div><button type="button" class="tinybtn wide" id="homeQuickReset">初期設定に戻す</button></div></div>
