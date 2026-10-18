@@ -89,6 +89,14 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 .mobile-counter>input{width:100%!important;min-width:0!important;height:48px;margin:0;text-align:center;appearance:textfield;-moz-appearance:textfield}
 .mobile-counter>input::-webkit-inner-spin-button,.mobile-counter>input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .mobile-counter>button{width:46px;min-width:46px;min-height:48px;margin:0;padding:6px!important;display:flex;align-items:center;justify-content:center;touch-action:manipulation}
+
+#printDocs .print-doc-group{border:1px solid #35516f;border-radius:12px;margin:9px 0;overflow:hidden;background:#152840}
+#printDocs .print-doc-group>summary{display:flex;align-items:center;gap:10px;padding:15px 13px;cursor:pointer;list-style:none;font-weight:700;min-height:52px}
+#printDocs .print-doc-group>summary::-webkit-details-marker{display:none}
+#printDocs .print-doc-group>summary:before{content:'▸';color:#8bc6f8;font-size:16px}
+#printDocs .print-doc-group[open]>summary:before{content:'▾'}
+#printDocs .print-doc-group-count{margin-left:auto;color:#aac4df;font-size:12px;font-weight:500}
+#printDocs .print-doc-group-body{padding:3px 10px 10px;border-top:1px solid #304860}
 </style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
@@ -1404,9 +1412,13 @@ function printDocRender(){
  $('printDocRecent').innerHTML=recentDocs.length?recentDocs.map(x=>'<div class="entry"><span class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><span class="muted micro"> '+escapeHtml(x.category||'その他')+'</span></span><button type="button" class="tinybtn" data-print-recent-open="'+escapeHtml(x.id)+'">開く・印刷</button></div>').join(''):'<p class="muted micro">開いた書類がここに表示されます。</p>';
  $('printDocRecent').querySelectorAll('[data-print-recent-open]').forEach(b=>b.onclick=()=>printDocOpenById(b.dataset.printRecentOpen));
  const sort=$('printDocSort').value;const matches=printDocs.filter(x=>(!filter||(x.category||'その他')===filter)&&(x.title+' '+x.category).toLowerCase().includes(q)).sort((a,b)=>sort==='name'?a.title.localeCompare(b.title,'ja'):sort==='category'?(a.category||'').localeCompare(b.category||'','ja'):String(b.created_at||'').localeCompare(String(a.created_at||'')));
- const items=matches.slice(0,printDocLimit),more=$('printDocShowMore');
- more.hidden=matches.length<=printDocLimit;more.textContent='さらに表示（残り'+(matches.length-printDocLimit)+'件）';
- $('printDocList').innerHTML=items.length?items.map(x=>'<div class="entry"><div class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><div class="muted micro">'+escapeHtml(x.category)+' ・ 登録 '+escapeHtml((x.created_at||'').slice(0,10)||'日付不明')+'</div></div><button type="button" class="tinybtn print-fav-toggle" data-print-favorite="'+escapeHtml(x.id)+'" aria-label="お気に入り切替">'+(favs.includes(x.id)?'★':'☆')+'</button><button type="button" class="btn" data-print-open="'+escapeHtml(x.id)+'">開く・印刷</button>'+(admin?'<button type="button" class="tinybtn" data-print-change-tag="'+escapeHtml(x.id)+'">タグ変更</button><button type="button" class="tinybtn" data-print-delete="'+escapeHtml(x.id)+'">削除</button>':'')+'</div>').join(''):'<p class="notice">該当する書類がありません。検索や分類を変更してください。</p>';
+ const items=matches,more=$('printDocShowMore');
+ more.hidden=true;
+ const openCats=new Set([...$('printDocList').querySelectorAll('details[data-doc-group][open]')].map(x=>x.dataset.docGroup));
+ const grouped=new Map();for(const doc of items){const cat=doc.category||'その他';if(!grouped.has(cat))grouped.set(cat,[]);grouped.get(cat).push(doc)}
+ const groupOrder=sort==='category'?[...grouped.keys()].sort((a,b)=>a.localeCompare(b,'ja')):[...grouped.keys()];
+ const renderRow=x=>'<div class="entry"><div class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><div class="muted micro">'+escapeHtml(x.category)+' ・ 登録 '+escapeHtml((x.created_at||'').slice(0,10)||'日付不明')+'</div></div><button type="button" class="tinybtn print-fav-toggle" data-print-favorite="'+escapeHtml(x.id)+'" aria-label="お気に入り切替">'+(favs.includes(x.id)?'★':'☆')+'</button><button type="button" class="btn" data-print-open="'+escapeHtml(x.id)+'">開く・印刷</button>'+(admin?'<button type="button" class="tinybtn" data-print-change-tag="'+escapeHtml(x.id)+'">タグ変更</button><button type="button" class="tinybtn" data-print-delete="'+escapeHtml(x.id)+'">削除</button>':'')+'</div>';
+ $('printDocList').innerHTML=items.length?groupOrder.map(cat=>'<details class="print-doc-group" data-doc-group="'+escapeHtml(cat)+'" '+((q||filter||openCats.has(cat))?'open':'')+'><summary><span>'+escapeHtml(cat)+'</span><span class="print-doc-group-count">'+grouped.get(cat).length+'件</span></summary><div class="print-doc-group-body">'+grouped.get(cat).map(renderRow).join('')+'</div></details>').join(''):'<p class="notice">該当する書類がありません。検索や分類を変更してください。</p>';
  $('printDocList').querySelectorAll('[data-print-favorite]').forEach(b=>b.onclick=()=>{
   const favs=printDocFavoritesRead(),id=b.dataset.printFavorite,updated=favs.includes(id)?favs.filter(x=>x!==id):[...favs,id];
   try{localStorage.setItem(PRINT_FAVORITES_KEY,JSON.stringify(updated))}catch(e){$('printDocStatus').textContent='お気に入り保存に失敗：'+e.message}
