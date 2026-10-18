@@ -83,7 +83,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 #home #homeTodayPanel{display:none!important}
 #home .home-hero-main>div:has(#homeHeroSales){display:none!important}
 #home .home-hero-main{grid-template-columns:minmax(0,1fr)!important}
-</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+#printDocs #printDocFavoritesPanel,#printDocs #printDocRecentPanel{border-color:#3a597c;background:linear-gradient(145deg,#19334f,#13263e)}#printDocs #printDocFavoritesPanel .entry,#printDocs #printDocRecentPanel .entry{display:flex;flex-wrap:wrap;gap:10px;align-items:center}#printDocs #printDocFavoritesPanel .print-doc-name,#printDocs #printDocRecentPanel .print-doc-name{flex:1;min-width:145px}#printDocs #printDocFavoritesPanel .tinybtn,#printDocs #printDocRecentPanel .tinybtn{min-height:42px}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="panel" id="homeTodayPanel"><div class="sectiontitle">今日の営業状況</div><div class="grid"><div class="metric"><span>本日の契約</span><strong id="todayDeals">0件</strong></div><div class="metric"><span>本日の売上</span><strong id="todaySales">¥0</strong></div></div><button class="btn wide" onclick="navigate('register')">＋ 実績を登録する</button></div><div class="panel home-lead-preview"><div class="row"><b>📅 直近の再来店予定</b><button type="button" class="tinybtn" onclick="navigate('leads')">カレンダーを見る ›</button></div><div class="home-lead-tabs"><button type="button" id="homeLeadTabToday" class="tinybtn" aria-pressed="true">今日</button><button type="button" id="homeLeadTabTomorrow" class="tinybtn" aria-pressed="false">明日</button></div><div id="homeLeadPreview" class="micro muted">予定を読み込み中…</div></div>
@@ -153,8 +153,10 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 <div class="row"><button class="btn" id="leadSave" type="submit">見込みを保存</button><button class="tinybtn" id="leadCancel" type="button">入力をクリア</button></div><p id="leadFormMessage" class="muted micro" role="status"></p></form></div>
 <div class="panel"><div class="row"><b>見込み一覧</b><span class="muted micro">本日来店予定 <strong id="leadTodayCount">0組</strong></span><button id="leadRefresh" type="button" class="tinybtn">最新情報を取得</button></div><div class="two"><label>ステータス<select id="leadFilter"><option value="">すべて</option><option>見込み</option><option>再来店予定</option><option>商談中</option><option>成約</option><option>失注</option></select></label><label>検索<input id="leadSearch" type="search" placeholder="見込み番号・担当者"></label></div><div id="leadList"></div></div></section>
 <section id="printDocs" class="screen"><div class="heading"><div><h1>店舗書類・印刷</h1><p class="muted micro">店舗共通の書類をSafariから開いて印刷</p></div></div>
-<div class="panel print-doc-panel"><div class="sectiontitle">書類一覧</div><div class="print-doc-filters"><input id="printDocSearch" type="search" placeholder="🔍 書類名で検索"><select id="printDocFilter" aria-label="書類の分類"><option value="">すべての分類</option><option>契約関連</option><option>光回線</option><option>オプション</option><option>業務管理</option><option>QRコード</option><option>キャンペーン</option><option>その他</option></select></div><div class="row doc-controls"><label>並び順<select id="printDocSort"><option value="recent">新しい順</option><option value="name">名前順</option><option value="category">分類順</option></select></label><span class="muted micro">☆でお気に入り登録</span></div><div id="printDocCategories" class="print-doc-chips"></div><p id="printDocStatus" class="muted micro" aria-live="polite"></p><div id="printDocList" class="print-doc-list"></div><button type="button" id="printDocShowMore" class="tinybtn wide" hidden>さらに表示</button></div>
 <div class="panel" id="printDocFavoritesPanel"><div class="row"><b>★ お気に入りの書類</b><span class="muted micro">この端末の設定</span></div><div id="printDocFavorites" class="print-doc-list"></div></div>
+<div class="panel" id="printDocRecentPanel"><div class="row"><b>◷ 最近使った書類</b><span class="muted micro">直近5件・この端末</span></div><div id="printDocRecent" class="print-doc-list"></div></div>
+<div class="panel print-doc-panel"><div class="sectiontitle">書類一覧</div><div class="print-doc-filters"><input id="printDocSearch" type="search" placeholder="🔍 書類名で検索"><select id="printDocFilter" aria-label="書類の分類"><option value="">すべての分類</option><option>契約関連</option><option>光回線</option><option>オプション</option><option>業務管理</option><option>QRコード</option><option>キャンペーン</option><option>その他</option></select></div><div class="row doc-controls"><label>並び順<select id="printDocSort"><option value="recent">新しい順</option><option value="name">名前順</option><option value="category">分類順</option></select></label><span class="muted micro">☆でお気に入り登録</span></div><div id="printDocCategories" class="print-doc-chips"></div><p id="printDocStatus" class="muted micro" aria-live="polite"></p><div id="printDocList" class="print-doc-list"></div><button type="button" id="printDocShowMore" class="tinybtn wide" hidden>さらに表示</button></div>
+
 <div class="panel" id="printDocCategoryAdmin" hidden><details><summary>＋ 管理者専用・分類タグの追加</summary>
 <p class="muted micro">追加したタグは店舗全員の書類一覧・書類登録画面に反映されます。既存のタグや書類はそのまま残ります。</p>
 <div class="print-tag-add"><input id="printDocNewCategory" maxlength="30" placeholder="例：料金プラン資料" aria-label="追加する分類タグ名"><button id="printDocAddCategory" type="button" class="btn">追加する</button></div>
@@ -1342,6 +1344,14 @@ const renderBeforeGap=render;render=function(){try{renderBeforeGap()}finally{try
 let printDocs=[],printDocBusy=false,printDocCustomCategories=[];
 const PRINT_FAVORITES_KEY='glink-print-favorites-v1';
 function printDocFavoritesRead(){try{const a=JSON.parse(localStorage.getItem(PRINT_FAVORITES_KEY)||'[]');return Array.isArray(a)?a:[]}catch{return []}}
+const PRINT_DOC_RECENT_KEY='glink-print-recent-v1';
+function printDocRecentRead(){
+ try{const v=JSON.parse(localStorage.getItem(PRINT_DOC_RECENT_KEY)||'[]');return Array.isArray(v)?v.filter(x=>typeof x==='string').slice(0,5):[]}
+ catch{return []}
+}
+function printDocRecentRemember(id){
+ try{localStorage.setItem(PRINT_DOC_RECENT_KEY,JSON.stringify([id,...printDocRecentRead().filter(x=>x!==id)].slice(0,5)))}catch{}
+}
 async function printDocOpenById(id){
  const doc=printDocs.find(d=>d.id===id);if(!doc)return;
  const w=window.open('about:blank','_blank');
@@ -1349,7 +1359,7 @@ async function printDocOpenById(id){
   const r=await printDocApi('/storage/v1/object/sign/'+PRINT_BUCKET+'/'+doc.storage_path,{method:'POST',body:JSON.stringify({expiresIn:120})});
   const raw=r.signedURL||r.signedUrl;if(!raw)throw Error('有効な閲覧URLが取得できません');
   const url=new URL(raw.startsWith('http')?raw:(raw.startsWith('/storage/')?raw:'/storage/v1'+(raw.startsWith('/')?'':'/')+raw),cloudCfg.url.replace(/\/$/,'')).href;
-  if(w)w.location.href=url;else location.href=url;
+  printDocRecentRemember(id);if(w)w.location.href=url;else location.href=url;printDocRender();
  }catch(e){if(w)w.close();$('printDocStatus').textContent='書類を開けません：'+e.message}
 }
 
@@ -1383,6 +1393,9 @@ function printDocRender(){
  $('printDocCategories').querySelectorAll('[data-print-category]').forEach(b=>b.onclick=()=>{$('printDocFilter').value=b.dataset.printCategory;printDocLimit=12;printDocRender()});
  const favs=printDocFavoritesRead();const favDocs=printDocs.filter(x=>favs.includes(x.id));$('printDocFavorites').innerHTML=favDocs.length?favDocs.map(x=>'<div class="entry"><span class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><span class="muted micro"> '+escapeHtml(x.category)+'</span></span><button type="button" class="tinybtn" data-print-fav-open="'+escapeHtml(x.id)+'">開く</button></div>').join(''):'<p class="muted micro">書類一覧の☆を押すとここに表示されます。</p>';
  $('printDocFavorites').querySelectorAll('[data-print-fav-open]').forEach(btn=>btn.onclick=()=>{const original=$('printDocList').querySelector('[data-print-open="'+btn.dataset.printFavOpen+'"]');if(original)original.click();else printDocOpenById(btn.dataset.printFavOpen)});
+ const recentDocs=printDocRecentRead().map(id=>printDocs.find(d=>d.id===id)).filter(Boolean);
+ $('printDocRecent').innerHTML=recentDocs.length?recentDocs.map(x=>'<div class="entry"><span class="print-doc-name"><b>'+escapeHtml(x.title)+'</b><span class="muted micro"> '+escapeHtml(x.category||'その他')+'</span></span><button type="button" class="tinybtn" data-print-recent-open="'+escapeHtml(x.id)+'">開く・印刷</button></div>').join(''):'<p class="muted micro">開いた書類がここに表示されます。</p>';
+ $('printDocRecent').querySelectorAll('[data-print-recent-open]').forEach(b=>b.onclick=()=>printDocOpenById(b.dataset.printRecentOpen));
  const sort=$('printDocSort').value;const matches=printDocs.filter(x=>(!filter||(x.category||'その他')===filter)&&(x.title+' '+x.category).toLowerCase().includes(q)).sort((a,b)=>sort==='name'?a.title.localeCompare(b.title,'ja'):sort==='category'?(a.category||'').localeCompare(b.category||'','ja'):String(b.created_at||'').localeCompare(String(a.created_at||'')));
  const items=matches.slice(0,printDocLimit),more=$('printDocShowMore');
  more.hidden=matches.length<=printDocLimit;more.textContent='さらに表示（残り'+(matches.length-printDocLimit)+'件）';
