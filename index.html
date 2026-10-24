@@ -172,7 +172,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
  #reports.report-executive .report-number-card .mobile-counter{grid-template-columns:29px minmax(0,1fr) 29px!important;column-gap:6px!important}
  #reports.report-executive .report-number-card .mobile-counter>button{width:29px!important}
 }
-.cb-electric{margin:12px 0;padding:11px;background:#172e47;border:1px solid #355472;border-radius:10px}.cb-electric label{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.55}.cb-electric input{flex-shrink:0;margin-top:3px}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+.cb-electric{margin:12px 0;padding:11px;background:#172e47;border:1px solid #355472;border-radius:10px}.cb-electric label{display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.55}.cb-electric input{flex-shrink:0;margin-top:3px}.cb-electric .cb-electric-exclusion{margin-top:11px;padding-top:11px;border-top:1px solid #365371;color:#f3d7a4}</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="panel" id="homeTodayPanel"><div class="sectiontitle">今日の営業状況</div><div class="grid"><div class="metric"><span>本日の契約</span><strong id="todayDeals">0件</strong></div><div class="metric"><span>本日の売上</span><strong id="todaySales">¥0</strong></div></div><button class="btn wide" onclick="navigate('register')">＋ 実績を登録する</button></div><div class="panel home-lead-preview"><div class="row"><b>📅 直近の再来店予定</b><button type="button" class="tinybtn" onclick="navigate('leads')">カレンダーを見る ›</button></div><div class="home-lead-tabs"><button type="button" id="homeLeadTabToday" class="tinybtn" aria-pressed="true">今日</button><button type="button" id="homeLeadTabTomorrow" class="tinybtn" aria-pressed="false">明日</button></div><div id="homeLeadPreview" class="micro muted">予定を読み込み中…</div></div>
@@ -199,7 +199,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 <div id="cbContracts" class="cb-contracts-compact"></div><p class="muted micro">YM：シンプル3 M/L＋データ増量OP加入、純新規はクレジットカード払い。SB：テイガク無制限／ペイトク2を前提に試算します。</p></div>
 <div class="panel"><div class="sectiontitle">② 光・Air</div>
 <div class="cb-choice" id="cbFixedButtons"><button type="button" data-cb-fixed="NONE">なし</button><button type="button" data-cb-fixed="EXISTING">光・Air契約済</button><button type="button" data-cb-fixed="KD20">光 KD20</button><button type="button" data-cb-fixed="KD30">光 KD30</button><button type="button" data-cb-fixed="AIR">Air KD30</button></div>
-<div class="cb-electric"><label><input type="checkbox" id="cbElectricDiscount" style="width:auto"> でんき割を組む（SB ペイトク2 MNP・SHS ペイトク2：対象1回線につき＋5,000円）</label></div>
+<div class="cb-electric"><label><input type="checkbox" id="cbElectricDiscount" style="width:auto"> でんき割を組む（YM・SB ペイトク2 MNP・SHS ペイトク2：対象1回線につき＋5,000円）</label><label class="cb-electric-exclusion"><input type="checkbox" id="cbYMSameDayHome" style="width:auto"> YM：おうち割とでんき割を同日に組む（YMのでんき割＋5,000円は対象外）</label></div>
 <div id="cbAirCheck" hidden><label><input type="checkbox" id="cbApplianceOk" style="width:auto"> 家電33,000円以上の購入条件を満たす</label></div>
 <p class="muted micro">新規の光・Airはプリペイド、契約済の光・AirにYMのおうち割を追加する場合はPayPayとして計算します。KD20は月額割引あり（総額には含めません）。</p></div>
 <div class="panel"><div class="sectiontitle">③ 計算結果</div>
@@ -1685,6 +1685,10 @@ function cbCompute(){
   if(cbFixed==='AIR'){if($('cbApplianceOk').checked)add('Air KD30 家電分',55000,'appliance');else warnings.push('Air KD30の家電分55,000円は33,000円以上の家電購入条件確認後に加算します。');}
  }
  if($('cbElectricDiscount').checked){
+  if(ymCount){
+   if($('cbYMSameDayHome').checked)warnings.push('YM：おうち割とでんき割を同日に組むため、YMのでんき割5,000円は加算していません。');
+   else add('YM でんき割 '+ymCount+'回線 × 5,000円',ymCount*5000);
+  }
   if(sbPaytoku)add('SBペイトク2 MNP でんき割 '+sbPaytoku+'回線 × 5,000円',sbPaytoku*5000);
   if(shsPaytoku)add('SHS ペイトク2 でんき割 '+shsPaytoku+'回線 × 5,000円',shsPaytoku*5000);
  }
@@ -1813,10 +1817,11 @@ $('cbBaseSave').onclick=async()=>{
  }catch(e){alert('保存に失敗しました：'+e.message)}
 };
 $('cbElectricDiscount').addEventListener('change',cbCompute);
+$('cbYMSameDayHome').addEventListener('change',cbCompute);
 $('cbReset').onclick=()=>{
  if(!confirm('今回のCB計算をリセットしますか？'))return;
  cbContracts=[];cbSeq=0;cbRakutenExpanded=false;cbFixed='NONE';cbExtraSelected={};
- $('cbDate').value=nowDay();$('cbApplianceOk').checked=false;$('cbElectricDiscount').checked=false;$('cbAirCheck').hidden=true;
+ $('cbDate').value=nowDay();$('cbApplianceOk').checked=false;$('cbElectricDiscount').checked=false;$('cbYMSameDayHome').checked=false;$('cbAirCheck').hidden=true;
  document.querySelectorAll('[data-cb-fixed]').forEach(b=>b.classList.toggle('active',b.dataset.cbFixed==='NONE'));
  cbRenderContracts();cbRenderExtraInputs();cbRenderRules();cbRenderBase();cbCompute();
 };
