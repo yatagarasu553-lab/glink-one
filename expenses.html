@@ -306,8 +306,9 @@ async function glinkCreatePDF(type){
   if(rect.width<10||rect.height<10||templateRect.height<10)throw Error('帳票が画面内で展開されていません');
   // Render directly with html2canvas rather than html2pdf's toCanvas worker,
   // whose intermediate clone can collapse print-only content in iOS WebKit.
-  if(typeof window.html2canvas!=='function')throw Error('html2canvas が見つかりません');
-  const canvas=await window.html2canvas(stage,{scale:1.4,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:900,scrollX:0,scrollY:0});
+  const canvas=typeof window.html2canvas==='function'
+   ? await window.html2canvas(stage,{scale:1.4,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:900,scrollX:0,scrollY:0})
+   : await window.html2pdf().set({html2canvas:{scale:1.4,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:900}}).from(stage).toCanvas().get('canvas');
   if(!canvas||canvas.width<10||canvas.height<10)throw Error('帳票キャンバスが空です（'+(canvas?.width||0)+'×'+(canvas?.height||0)+'）');
   step='PDFの組み立て';
   const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
