@@ -57,7 +57,7 @@ body.transport-print .print-transport{display:block!important;width:190mm;margin
 .stamp-preview{width:58px;height:58px;object-fit:contain;border:1px dashed #c5cfdd;border-radius:10px;background:#fff}
 .approval-stamp,.t-approval-stamp{max-width:16mm;max-height:16mm;object-fit:contain;display:none;margin:auto}
 </style></head><body>
-<div class="app"><div style="font-size:12px;text-align:center;color:#476487;font-weight:700;margin:0 0 10px">GLINK 経費申請 v2.5 — 描画診断</div><a href="./" style="display:block;background:#e6edf6;color:#173f73;text-decoration:none;padding:12px 15px;border-radius:12px;font-weight:800;margin-bottom:12px">‹ GLINK ONEに戻る</a><div class="hero"><h1>立替申請アプリ</h1><p>経費申請・交通費申請をスマホから作成</p></div><div class="mode-tabs"><button id="expenseTab" class="mode-tab active" onclick="switchMode('expense')">経費申請</button><button id="transportTab" class="mode-tab" onclick="switchMode('transport')">交通費申請</button></div><div id="expenseSection"><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
+<div class="app"><div style="font-size:12px;text-align:center;color:#476487;font-weight:700;margin:0 0 10px">GLINK 経費申請 v2.6 — 直接PDF生成</div><a href="./" style="display:block;background:#e6edf6;color:#173f73;text-decoration:none;padding:12px 15px;border-radius:12px;font-weight:800;margin-bottom:12px">‹ GLINK ONEに戻る</a><div class="hero"><h1>立替申請アプリ</h1><p>経費申請・交通費申請をスマホから作成</p></div><div class="mode-tabs"><button id="expenseTab" class="mode-tab active" onclick="switchMode('expense')">経費申請</button><button id="transportTab" class="mode-tab" onclick="switchMode('transport')">交通費申請</button></div><div id="expenseSection"><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">店舗責任者（責任者1）印鑑</div>
 <div class="stamp-box">
  <div class="stamp-row"><label class="stamp-toggle"><input id="expenseStampOn" type="checkbox"> 印鑑を入れる</label>
@@ -109,7 +109,7 @@ body.transport-print .print-transport{display:block!important;width:190mm;margin
 </div>
 <div class="print-transport"><div class="t-title">交通費立替明細書</div><div style="height:6mm"></div><div class="t-status"><table><tr><td>申請</td><td>済</td><td>未</td></tr></table></div><div class="t-date"><span id="tpYear"></span> 年　<span id="tpMonth"></span>月　<span id="tpDay"></span>日</div><div class="t-top"><table class="t-person"><tr><td class="label">会社名</td><td class="value" id="tpCompany"></td></tr><tr><td class="label">所属</td><td class="value" id="tpDept"></td></tr><tr><td class="label">氏名</td><td class="value" id="tpName"></td></tr></table><div></div><table class="t-approval"><tr><th>責任者1</th><th>責任者2</th><th>責任者3</th><th>経理責任者</th></tr><tr><td><img id="tpManagerStamp" class="t-approval-stamp" alt="責任者印"></td><td></td><td></td><td></td></tr></table></div><div class="t-gap"></div><table class="t-table"><colgroup><col><col><col><col><col><col><col></colgroup><thead><tr><th>月日</th><th colspan="2">区間</th><th>電車</th><th>バス<br>タクシー</th><th>その他<br>高速・ガソリン代等</th><th>訪問先/備考</th></tr></thead><tbody id="tpRows"></tbody></table><table class="t-sub"><tr><td class="label" style="width:37%">小　　計</td><td id="tpTrainSum" style="width:11%"></td><td id="tpBusSum" style="width:12%"></td><td id="tpOtherSum" style="width:18%"></td><td style="width:11%;font-weight:700">受領印</td><td style="width:11%"></td></tr></table><table class="t-grand"><tr><td class="label" style="width:37%">合　　計</td><td id="tpTotal" style="width:33%"></td><td style="width:30%"></td></tr></table></div><div class="print-receipts" id="printReceipts"><h2>領収書添付</h2><div id="pReceiptImages"></div></div>
 
-<script src="vendor/html2pdf.bundle.min.js?v=20261027f"></script><script src="vendor/jspdf.umd.min.js?v=20261027f"></script><script>
+<script src="vendor/html2pdf.bundle.min.js?v=20261027g"></script><script src="vendor/jspdf.umd.min.js?v=20261027g"></script><script>
 const DRAFT_KEY='expense_app_draft_v2',HISTORY_KEY='expense_app_history_v2';let receiptImages=[],saveTimer=null;const $=id=>document.getElementById(id),yen=x=>'¥'+Number(x||0).toLocaleString('ja-JP');function esc(s){return String(s||'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}function todayISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function addExpense(v={}){const d=document.createElement('div');d.className='expense';d.innerHTML='<div class="expense-head"><span>明細</span><button class="remove" type="button" onclick="this.closest(\'.expense\').remove();renumber();calc();scheduleSave()">削除</button></div><div class="grid"><div class="field"><label>月日</label><input class="e-date" type="date" value="'+esc(v.date||'')+'"></div><div class="field"><label>支払先</label><input class="e-payee" value="'+esc(v.payee||'')+'"></div><div class="field"><label>使用目的</label><input class="e-purpose" value="'+esc(v.purpose||'')+'"></div><div class="field"><label>購入物品</label><input class="e-item" value="'+esc(v.item||'')+'"></div></div><div class="field"><label>参加者等備考</label><textarea class="e-note">'+esc(v.note||'')+'</textarea></div><div class="field"><label>金額</label><input class="e-amount" type="number" inputmode="numeric" min="0" value="'+esc(v.amount||'')+'"></div>';$('expenses').appendChild(d);renumber();bindInputs(d);calc();scheduleSave()}
 function renumber(){[...$('expenses').querySelectorAll('.expense')].forEach((e,i)=>e.querySelector('.expense-head span').textContent='明細 '+(i+1))}function bindInputs(root=document){root.querySelectorAll('input,textarea').forEach(el=>{if(el.id==='receiptInput')return;el.addEventListener('input',()=>{calc();scheduleSave()});el.addEventListener('change',scheduleSave)})}function calc(){let t=0;document.querySelectorAll('.e-amount').forEach(x=>t+=Number(x.value||0));$('total').textContent=yen(t);return t}
@@ -299,22 +299,63 @@ async function glinkCreatePDF(type){
   const cloned=stage.firstElementChild;cloned.style.setProperty('display','block','important');
   cloned.style.setProperty('visibility','visible','important');
   await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
-  step='帳票の画像化';
-  const rect=stage.getBoundingClientRect();
-  const templateRect=cloned.getBoundingClientRect();
-  glinkPdfStatus('帳票の描画を確認中：'+Math.round(rect.width)+'×'+Math.round(rect.height)+' / '+Math.round(templateRect.width)+'×'+Math.round(templateRect.height));
-  if(rect.width<10||rect.height<10||templateRect.height<10)throw Error('帳票が画面内で展開されていません');
-  // Render directly with html2canvas rather than html2pdf's toCanvas worker,
-  // whose intermediate clone can collapse print-only content in iOS WebKit.
-  // html2pdf's get('canvas') may return a zero-height intermediate in iOS WebKit.
-  // Use the bundled html2canvas directly via a separate local vendor script.
-  const canvas=await window.html2pdf().set({html2canvas:{scale:1.25,useCORS:true,backgroundColor:'#ffffff',logging:false,windowWidth:900}}).from(stage).toCanvas().get('canvas');
-  if(!canvas||canvas.width<10||canvas.height<10)throw Error('帳票キャンバスが空です（'+(canvas?.width||0)+'×'+(canvas?.height||0)+'）');
+  // Native vector PDF: avoids html2canvas and the zero-height canvas on iOS PWA.
   step='PDFの組み立て';
   const pdf=new window.jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});
-  const img=canvas.toDataURL('image/jpeg',.88);
-  const pageWidth=210,pageHeight=297,imgHeight=pageWidth*canvas.height/canvas.width;
-  for(let offset=0;offset<imgHeight;offset+=pageHeight){if(offset)pdf.addPage();pdf.addImage(img,'JPEG',0,-offset,pageWidth,imgHeight)}
+  const txt=(v,x,y,size=9,opts={})=>{pdf.setFontSize(size);pdf.text(String(v??''),x,y,opts)};
+  const line=(x1,y1,x2,y2)=>pdf.line(x1,y1,x2,y2);
+  const cell=(x,y,w,h,value,size=8)=>{pdf.rect(x,y,w,h);if(value!==undefined&&value!==null){const rows=pdf.splitTextToSize(String(value),Math.max(2,w-3));pdf.setFontSize(size);pdf.text(rows.slice(0,Math.max(1,Math.floor(h/4))),x+1.5,y+Math.min(h-1,4.5))}};
+  pdf.setFont('helvetica','normal');
+  // Japanese text uses a rasterized label only when the browser provides a usable
+  // canvas. No dependency on the hidden print template or html2pdf worker.
+  const drawLabel=(value,x,y,w,h,size=11)=>{
+   const text=String(value??'');if(!text)return;
+   const c=document.createElement('canvas');const scale=3;c.width=Math.max(1,Math.ceil(w*scale*3.78));c.height=Math.max(1,Math.ceil(h*scale*3.78));
+   const ctx=c.getContext('2d');if(!ctx){txt(text,x+1,y+4,8);return}
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#111';ctx.font='bold '+Math.round(size*scale*1.1)+'px -apple-system, sans-serif';ctx.textBaseline='middle';
+   const max=c.width-14;let valueText=text;while(valueText.length>1&&ctx.measureText(valueText).width>max)valueText=valueText.slice(0,-1);ctx.fillText(valueText,7,c.height/2);
+   pdf.addImage(c.toDataURL('image/png'),'PNG',x,y,w,h);
+  };
+  const box=(x,y,w,h,value,size=9)=>{pdf.rect(x,y,w,h);drawLabel(value,x+0.5,y+0.5,w-1,h-1,size)};
+  const date=(type==='expense'?$('applyDate').value:$('tApplyDate').value)||todayISO();
+  const company=type==='expense'?$('company').value:$('tCompany').value;
+  const dept=type==='expense'?$('dept').value:$('tDept').value;
+  const name=type==='expense'?$('name').value:$('tName').value;
+  drawLabel(type==='expense'?'経費立替明細書（兼出金票）':'交通費立替明細書',24,9,162,12,18);
+  box(10,27,14,8,'申請');box(24,27,14,8,'済');box(38,27,14,8,'未');drawLabel(date.replaceAll('-',' / '),135,27,65,8,11);
+  box(10,40,23,8,'会社名');box(33,40,67,8,company);
+  box(10,48,23,8,'所属');box(33,48,67,8,dept);
+  box(10,56,23,8,'氏名');box(33,56,67,8,name);
+  ['責任者1','責任者2','責任者3','経理責任者'].forEach((v,i)=>box(116+i*21,40,21,9,v,7));
+  for(let i=0;i<4;i++)pdf.rect(116+i*21,49,21,15);
+  const stampOn=type==='expense'?$('expenseStampOn').checked:$('transportStampOn').checked;
+  if(stampOn&&managerStampImage){try{pdf.addImage(managerStampImage,116+2,49.5,14,14)}catch(e){throw Error('印鑑画像をPDFに配置できません：'+e.message)}}
+  if(type==='expense'){
+   const cols=[10,22,70,103,136,175,200];const headers=['月日','支払先','使用目的','購入物品','参加者等備考','金額'];
+   for(let i=0;i<6;i++)box(cols[i],78,cols[i+1]-cols[i],10,headers[i],8);
+   const entries=[...$('expenses').querySelectorAll('.expense')];let total=0;
+   for(let i=0;i<15;i++){
+    const e=entries[i];const vals=e?[e.querySelector('.e-date').value.slice(5).replace('-','/'),e.querySelector('.e-payee').value,e.querySelector('.e-purpose').value,e.querySelector('.e-item').value,e.querySelector('.e-note').value,Number(e.querySelector('.e-amount').value||0)]:['','','','','',''];
+    if(e)total+=Number(vals[5]);
+    vals[5]=vals[5]?Number(vals[5]).toLocaleString('ja-JP'):'';
+    for(let j=0;j<6;j++)box(cols[j],88+i*10,cols[j+1]-cols[j],10,vals[j],j===0?7:8);
+   }
+   box(10,238,129,11,'合計');box(139,238,61,11,yen(total),12);
+   box(155,249,22,19,'受領印');pdf.rect(177,249,23,19);
+  }else{
+   const cols=[10,28,57,86,105,128,164,200],headers=['月日','出発','到着','電車','バス等','その他','訪問先/備考'];
+   for(let i=0;i<7;i++)box(cols[i],73,cols[i+1]-cols[i],10,headers[i],7);
+   const d=collectTransport();
+   for(let i=0;i<Math.min(36,d.expenses.length);i++){
+    const e=d.expenses[i];const vals=[e.date?.slice(5).replace('-','/')||'',e.from,e.to,e.train?yen(e.train):'',e.bus?yen(e.bus):'',e.other?yen(e.other):'',e.note];
+    if(i>=32){pdf.addPage();for(let j=0;j<7;j++)box(cols[j],15,cols[j+1]-cols[j],10,headers[j],7)}
+    const y=i<32?83+i*5.3:25+(i-32)*5.3;
+    for(let j=0;j<7;j++)box(cols[j],y,cols[j+1]-cols[j],5.3,vals[j],7);
+   }
+   const y=d.expenses.length>32?51:Math.min(258,83+Math.max(1,d.expenses.length)*5.3+5);
+   box(10,y,60,9,'小計');box(70,y,30,9,yen(d.tr));box(100,y,30,9,yen(d.b));box(130,y,34,9,yen(d.o));
+   box(10,y+9,100,10,'合計');box(110,y+9,90,10,yen(d.total),12);
+  }
   if(type==='expense'&&receiptImages.length){
    for(const src of receiptImages){
     const image=new Image();image.src=src;
