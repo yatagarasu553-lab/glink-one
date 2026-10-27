@@ -221,10 +221,7 @@ body>header .logo{background:linear-gradient(145deg,#2976b7,#173a68);box-shadow:
 #home .home-quick-collapse>summary,#home .home-workspace-details>summary{color:#d8eafd;font-weight:700;min-height:52px}
 @media(max-width:360px){#home .home-workspace-grid{gap:8px}#home .home-workspace-grid button{padding:12px 10px;min-height:110px}#home .home-workspace-grid button b{font-size:14px}}
 
-#expensesApp .expense-embed-help{margin-bottom:12px}
-#expensesApp .expense-embed-help p{line-height:1.65;margin:8px 0 12px}
-#expensesApp .expense-open-original{display:block;text-align:center;text-decoration:none;color:#f0f8ff;background:#245781;border:1px solid #4681af;padding:13px;border-radius:12px;font-weight:750}
-#expensesAppFrame{display:block;border:1px solid #38516c;border-radius:14px;background:#f3f6fb;width:100%;height:max(650px,calc(100dvh - 190px));min-height:650px}
+
 </style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge" hidden>LOCAL DEMO</div><div class="header-nav-actions"><button type="button" class="header-nav-btn" onclick="navigate('home')"><svg class="g2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></svg><span>ホーム</span></button><button id="moreMenuButton" type="button" class="header-nav-btn" aria-expanded="false" onclick="toggleMoreMenu()"><svg class="g2-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>メニュー</span></button></div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
@@ -2253,7 +2250,7 @@ $('homeSyncRefresh').onclick=async()=>{
 
 
 let navigationHistory=['home'],historyGoingBack=false;
-const screenNames={pushSettings:'iPhone通知',home:'ホーム',register:'個別実績',leads:'見込み・再来店',ranking:'ランキング',reports:'日報',printDocs:'店舗書類',reportImage:'活動報告画像',cbCalc:'CB計算',team:'チーム共有',login:'ログイン',mypage:'マイページ',announcements:'お知らせ',settings:'設定',paste:'店舗日報',analytics:'分析',staffGoals:'個人目標',expensesApp:'経費申請'};
+const screenNames={pushSettings:'iPhone通知',home:'ホーム',register:'個別実績',leads:'見込み・再来店',ranking:'ランキング',reports:'日報',printDocs:'店舗書類',reportImage:'活動報告画像',cbCalc:'CB計算',team:'チーム共有',login:'ログイン',mypage:'マイページ',announcements:'お知らせ',settings:'設定',paste:'店舗日報',analytics:'分析',staffGoals:'個人目標'};
 const beforeHistoryNavigate=navigate;
 navigate=function(page){
  const previous=document.querySelector('.screen.active')?.id||'home';
