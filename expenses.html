@@ -57,7 +57,7 @@ body.transport-print .print-transport{display:block!important;width:190mm;margin
 .stamp-preview{width:58px;height:58px;object-fit:contain;border:1px dashed #c5cfdd;border-radius:10px;background:#fff}
 .approval-stamp,.t-approval-stamp{max-width:16mm;max-height:16mm;object-fit:contain;display:none;margin:auto}
 </style></head><body>
-<div class="app"><div class="hero"><h1>立替申請アプリ</h1><p>経費申請・交通費申請をスマホから作成</p></div><div class="mode-tabs"><button id="expenseTab" class="mode-tab active" onclick="switchMode('expense')">経費申請</button><button id="transportTab" class="mode-tab" onclick="switchMode('transport')">交通費申請</button></div><div id="expenseSection"><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
+<div class="app"><a href="./" style="display:block;background:#e6edf6;color:#173f73;text-decoration:none;padding:12px 15px;border-radius:12px;font-weight:800;margin-bottom:12px">‹ GLINK ONEに戻る</a><div class="hero"><h1>立替申請アプリ</h1><p>経費申請・交通費申請をスマホから作成</p></div><div class="mode-tabs"><button id="expenseTab" class="mode-tab active" onclick="switchMode('expense')">経費申請</button><button id="transportTab" class="mode-tab" onclick="switchMode('transport')">交通費申請</button></div><div id="expenseSection"><div class="card"><div class="grid"><div class="field"><label>申請日</label><input id="applyDate" type="date"></div><div class="field"><label>会社名</label><input id="company" value="株式会社グリンク"></div><div class="field"><label>所属</label><input id="dept" value="コストコ富谷"></div><div class="field"><label>氏名</label><input id="name" placeholder="例：菅原 光弥"></div></div><div id="saveStatus" class="status">入力内容はこの端末に自動保存されます。</div></div>
 <div class="card"><div style="font-weight:900;font-size:18px">店舗責任者（責任者1）印鑑</div>
 <div class="stamp-box">
  <div class="stamp-row"><label class="stamp-toggle"><input id="expenseStampOn" type="checkbox"> 印鑑を入れる</label>
@@ -254,7 +254,11 @@ async function glinkCreatePDF(type){
  const buttons=[...document.querySelectorAll('.btn.pdf')];buttons.forEach(b=>{b.disabled=true;b.dataset.oldText=b.textContent;b.textContent='PDFを生成しています…'});
  let stage=null,style=null;
  try{
-  if(typeof html2canvas!=='function'||!window.jspdf?.jsPDF)throw Error('PDF変換ライブラリを読み込めませんでした。ネットワーク接続を確認してください。');
+  if(typeof html2canvas!=='function'||!window.jspdf?.jsPDF){
+   const choice=confirm('PDF変換機能を読み込めませんでした。iPhone標準の印刷・PDF保存画面を開きますか？');
+   if(choice){document.body.classList.toggle('expense-print',type==='expense');document.body.classList.toggle('transport-print',type==='transport');window.print()}
+   return;
+  }
   // Expand print-only document styles temporarily without invoking the iOS print dialog.
   const printCSS=[];
   for(const sheet of document.styleSheets){try{for(const rule of sheet.cssRules){if(rule.type===CSSRule.MEDIA_RULE&&rule.conditionText.includes('print'))for(const nested of rule.cssRules)printCSS.push(nested.cssText)}}catch(e){}}
