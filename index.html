@@ -189,7 +189,20 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 #moreMenu .menu-section{margin:6px 0;border:1px solid #36506d;border-radius:12px;background:#142841;overflow:hidden}
 #moreMenu .menu-section>summary{padding:15px 12px;min-height:50px;display:flex;align-items:center;justify-content:space-between}
 #moreMenu .menu-section .more-menu-grid{padding:0 10px 12px}
-</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge">LOCAL DEMO</div></header><main>
+
+body{padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))!important}
+body>header{position:sticky;top:0;z-index:30;max-width:none;width:100%;padding:calc(12px + env(safe-area-inset-top,0px)) max(14px,calc((100% - 760px)/2 + 14px)) 11px;background:rgba(10,22,38,.98);border-bottom:1px solid #29415d;backdrop-filter:blur(14px);gap:12px;min-height:65px}
+body>header .brand{min-width:0;font-size:16px;letter-spacing:.3px;gap:8px}
+body>header .brand .logo{padding:8px;border-radius:10px}
+body>header .brand .micro{font-size:9px}
+.header-nav-actions{display:flex;align-items:center;gap:7px;margin-left:auto;flex-shrink:0}
+.header-nav-btn{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;background:#1b3653;border:1px solid #365778;color:#d5ebff;border-radius:10px;min-width:57px;min-height:47px;font-size:20px;line-height:1.1;padding:5px 8px;touch-action:manipulation}
+.header-nav-btn span{font-size:10px;font-weight:700}
+.header-nav-btn.active,.header-nav-btn[aria-expanded="true"]{background:#286394;border-color:#72b1e2;color:#fff}
+body>header #cloudBadge{display:none!important}
+@media(display-mode:standalone){body>header{padding-top:calc(12px + env(safe-area-inset-top,0px))!important}}
+@media(max-width:365px){body>header .brand{font-size:14px}.header-nav-btn{min-width:48px;padding:5px}.header-nav-actions{gap:5px}}
+</style></head><body><header><div class="brand"><div class="logo">G</div><div>GLINK ONE<div class="muted micro" style="font-weight:400;letter-spacing:0">STORE PERFORMANCE</div></div></div><div class="pill" id="cloudBadge" hidden>LOCAL DEMO</div><div class="header-nav-actions"><button type="button" class="header-nav-btn" onclick="navigate('home')">⌂<span>ホーム</span></button><button id="moreMenuButton" type="button" class="header-nav-btn" aria-expanded="false" onclick="toggleMoreMenu()">☷<span>メニュー</span></button></div></header><main>
 <section id="home" class="screen active"><div class="heading"><div><h1>ダッシュボード</h1><p class="muted micro" id="period"></p></div><span class="pill">● 店舗全体</span></div>
 <div class="home-hero" aria-label="店舗サマリー"><div class="home-hero-top"><span>STORE OVERVIEW</span><span id="homeHeroDate"></span></div><div class="home-hero-main"><div><small>今月の売上</small><strong id="homeHeroSales">¥0</strong></div><div><small>月間対外新規</small><strong id="homeHeroDeals">0台</strong></div></div><div class="home-hero-foot"><span id="homeHeroGoal">月間達成率 0%</span><div class="home-hero-progress"><div id="homeHeroBar"></div></div></div></div>
 <div class="home-workspace-head"><strong>業務メニュー</strong><span>使いたい機能を選択</span></div><div class="home-workspace-grid"><button type="button" onclick="navigate('printDocs')"><span>🖨️</span><b>書類印刷</b><small>資料を探す・印刷</small></button><button type="button" onclick="navigate('cbCalc')"><span>💴</span><b>CB計算</b><small>特典額を確認</small></button><button type="button" onclick="navigate('reports')"><span>▤</span><b>日報入力</b><small>活動を記録</small></button><button type="button" onclick="navigate('register')"><span>✚</span><b>個別実績</b><small>契約を登録</small></button><button type="button" onclick="navigate('leads')"><span>📅</span><b>見込み管理</b><small>再来店を確認</small></button><button type="button" onclick="navigate('ranking')"><span>★</span><b>ランキング</b><small>実績・順位を確認</small></button></div><div class="home-quick"><div class="home-quick-head"><b>クイックアクセス</b><button type="button" class="tinybtn" id="homeQuickEdit">並び替え・編集</button></div><div class="home-shortcuts" id="homeShortcutList"></div><div id="homeQuickSettings" class="home-quick-settings" hidden><p class="muted micro">使う機能を最大6個選択し、上下ボタンで順番を変更します。この端末だけの設定です。</p><div id="homeQuickOptions"></div><button type="button" class="tinybtn wide" id="homeQuickReset">初期設定に戻す</button></div></div>
@@ -292,7 +305,7 @@ input:not([type="checkbox"]):not([type="radio"]),select,textarea{font-size:16px!
 <details class="menu-section"><summary>⚙️ アカウント・設定 <span class="menu-arrow">›</span></summary><div class="more-menu-grid">
 <button type="button" onclick="navigate('pushSettings')">🔔 iPhone通知</button><button type="button" onclick="navigate('mypage')">👤 マイページ</button><button type="button" onclick="navigate('login')">🔐 ログイン</button><button data-admin-only type="button" onclick="navigate('settings')">⚙ 店舗設定</button>
 </div></details>
-</div></div><div id="pageBackBar" class="page-back-bar" hidden><button id="pageBack" type="button">‹ 前の画面へ</button><span id="currentPageName"></span></div><nav class="nav" aria-label="メインメニュー"><button data-nav="home" class="active" onclick="navigate('home')"><b>⌂</b>ホーム</button><button data-nav="register" onclick="navigate('register')"><b>＋</b>個別</button><button data-nav="ranking" onclick="navigate('ranking')"><b>★</b>順位</button><button data-nav="reports" onclick="navigate('reports')"><b>▤</b>日報</button><button id="moreMenuButton" type="button" aria-expanded="false" onclick="toggleMoreMenu()"><b>☷</b>メニュー</button></nav>
+</div></div><div id="pageBackBar" class="page-back-bar" hidden><button id="pageBack" type="button">‹ 前の画面へ</button><span id="currentPageName"></span></div>
 <script>
 /* Connection bootstrap runs independently of the dashboard and authentication modules. */
 (function(){
