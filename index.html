@@ -955,7 +955,7 @@ $('manageAccountSave').onclick=async()=>{try{await glinkUpdateManagedAccount()}c
 let staffActivityLastSent=0,staffActivityInFlight=false;
 async function glinkActivityRequest(payload){
  return authorized(async()=>{
-  const r=await cloudFetchTimed(cloudCfg.url.replace(/\\/$/,'')+'/functions/v1/glink-staff-activity',{method:'POST',headers:{apikey:cloudCfg.key,Authorization:'Bearer '+cloudSession.access_token,'Content-Type':'application/json'},body:JSON.stringify({team_id:cloudCfg.team,...payload})},12000);
+  const r=await cloudFetchTimed(cloudCfg.url.replace(/\/$/,'')+'/functions/v1/glink-staff-activity',{method:'POST',headers:{apikey:cloudCfg.key,Authorization:'Bearer '+cloudSession.access_token,'Content-Type':'application/json'},body:JSON.stringify({team_id:cloudCfg.team,...payload})},12000);
   let data={};try{data=await r.json()}catch{}
   if(!r.ok)throw Error(data.error||'履歴の取得に失敗しました（HTTP '+r.status+'）');
   return data;
