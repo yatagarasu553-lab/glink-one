@@ -694,10 +694,10 @@ const archiveUnit=k=>ARCHIVE_METRICS.find(a=>a[0]===k)?.[2]||'件';
 function archiveMonthShift(m,offset){const y=Number(m.slice(0,4)),mo=Number(m.slice(5,7));if(!y||!mo)return nowDay().slice(0,7);const d=new Date(y,mo-1+offset,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')}
 function archiveMonths(){
  const all=new Set([nowDay().slice(0,7),...Object.keys(state.targets||{})]);
- for(const x of state.storeReports||[])if(/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date))all.add(x.date.slice(0,7));
- for(const x of state.entries||[])if(/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date))all.add(x.date.slice(0,7));
- for(const x of submittedRecords||[])if(/^\\d{4}-\\d{2}-\\d{2}$/.test(x.payload?.date||''))all.add(x.payload.date.slice(0,7));
- return [...all].filter(x=>/^\\d{4}-(0[1-9]|1[0-2])$/.test(x)).sort();
+ for(const x of state.storeReports||[])if(/^\d{4}-\d{2}-\d{2}$/.test(x.date))all.add(x.date.slice(0,7));
+ for(const x of state.entries||[])if(/^\d{4}-\d{2}-\d{2}$/.test(x.date))all.add(x.date.slice(0,7));
+ for(const x of submittedRecords||[])if(/^\d{4}-\d{2}-\d{2}$/.test(x.payload?.date||''))all.add(x.payload.date.slice(0,7));
+ return [...all].filter(x=>/^\d{4}-(0[1-9]|1[0-2])$/.test(x)).sort();
 }
 function archiveActual(m){return effectiveMonth(m).sums}
 function archiveNumeric(value){return typeof value==='number'&&Number.isFinite(value)&&value>=0?value:null}
@@ -715,7 +715,7 @@ function archiveHighlightsCard(k,m){
 function renderMonthlyArchive(){
  const root=$('monthlyArchive');if(!root)return;
  const el=$('archiveMonth');if(!el.value)el.value=nowDay().slice(0,7);
- const m=el.value;if(!/^\\d{4}-(0[1-9]|1[0-2])$/.test(m))return;
+ const m=el.value;if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(m))return;
  const actual=archiveActual(m),prev=archiveActual(archiveMonthShift(m,-1)),goal=state.targets?.[m]||{};
  const hasReports=reportForMonth(m).length>0;
  $('archiveSourceNote').textContent=hasReports?'店舗結果報告の登録済み累計から算出。未登録項目は「—」で表示します。':'この月の店舗結果報告は未登録です。数値は推測しません。';
@@ -746,7 +746,7 @@ $('archivePrev').onclick=()=>{$('archiveMonth').value=archiveMonthShift($('archi
 $('archiveNext').onclick=()=>{$('archiveMonth').value=archiveMonthShift($('archiveMonth').value,1);renderMonthlyArchive()};
 
 const DAILY_GOAL_KEYS=[['external','対外（SB＋YM）'],['device','機変'],['ys','YS'],['adc','ADC'],['insurance','あんスマ']];
-const oldRender=render;render=function(){try{oldRender()}finally{try{renderPasteExtras()}catch(e){console.error('GLINK store extras',e)}try{applyHomeVisibility()}catch(e){console.error('GLINK home customization',e)}try{renderReconciliation();renderExternalSummary()}catch(e){console.error('GLINK external summary',e)}}};
+const oldRender=render;render=function(){try{oldRender()}finally{try{renderPasteExtras()}catch(e){console.error('GLINK store extras',e)}try{applyHomeVisibility()}catch(e){console.error('GLINK home customization',e)}try{renderReconciliation();renderExternalSummary()}catch(e){console.error('GLINK external summary',e)}try{if($('monthlyArchive')?.classList.contains('active'))renderMonthlyArchive()}catch(e){console.error('GLINK monthly archive',e)}}};
 $('rankingMonth').value=nowDay().slice(0,7);
 $('rankingMonth').onchange=render;
 function syncTypeButtons(){document.querySelectorAll('#dealTypeButtons button').forEach(b=>b.classList.toggle('active',b.dataset.kind===$('dealType').value))}
