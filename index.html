@@ -597,7 +597,7 @@ $('allTargetMonth').value=nowDay().slice(0,7);
 let glinkPreviousTargetMonth=$('allTargetMonth').value;
 $('allTargetMonth').addEventListener('change',()=>{
  const next=$('allTargetMonth').value;
- if(!/^\\d{4}-\\d{2}$/.test(next)){ $('allTargetMonth').value=glinkPreviousTargetMonth;return;}
+ if(!/^\d{4}-\d{2}$/.test(next)){ $('allTargetMonth').value=glinkPreviousTargetMonth;return;}
  // Compare against the previous month's saved values before switching.
  $('allTargetMonth').value=glinkPreviousTargetMonth;
  const dirty=glinkTargetEditorDirty();
@@ -663,7 +663,7 @@ $('confirmPaste').onclick=()=>{
 };
 $('saveAllTargets').onclick=()=>{
  if(activeRole!=='admin')return alert('管理者のみ保存できます');
- const m=glinkTargetMonth();if(!/^\\d{4}-\\d{2}$/.test(m))return alert('対象月を確認してください');
+ const m=glinkTargetMonth();if(!/^\d{4}-\d{2}$/.test(m))return alert('対象月を確認してください');
  const v={};for(const [k] of TARGET_KEYS){
   const raw=$('tg_'+k).value.trim();if(raw===''){v[k]=null;continue}
   const n=Number(raw);if(!Number.isSafeInteger(n)||n<0)return alert('目標値を確認してください');v[k]=n;
