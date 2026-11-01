@@ -979,7 +979,7 @@ $('roleFeatureDefault').onclick=roleFeatureReset;
 $('roleFeatureSave').onclick=async()=>{try{await saveRoleFeatureSettings()}catch(e){$('roleFeatureStatus').textContent='保存エラー：'+e.message}};
 
 function updateRoleUI(){
- const roleText=cloudSession?(activeRole==='admin'?'管理者：店舗データの編集可能':activeRole==='member'?'一般スタッフ：本人の個別実績・日報を登録可能':activeRole==='sp'?'SP：活動報告画像を除くスタッフ機能を利用可能':'権限を確認しています'):'未ログイン：端末内デモモード';
+ const roleText=cloudSession?(activeRole==='admin'?'管理者：店舗データの編集可能':activeRole==='member'?'一般スタッフ：本人の個別実績・日報を登録可能':activeRole==='sp'?'SP：管理者が許可した機能を利用可能':'権限を確認しています'):'未ログイン：端末内デモモード';
  const el=$('myRole');if(el)el.textContent=roleText;
  const readOnly=!!cloudSession&&activeRole!=='admin';
  const restricted=activeRole!=='admin';
@@ -3004,4 +3004,4 @@ if(reportRateForm){
  reportRateForm.addEventListener('change',updateReportLiveRates);
  updateReportLiveRates();
 }
-</script><script src="./smart-home.js?v=20261101sp" defer></script></body></html>
+</script><script src="./smart-home.js?v=20261101rolefeatures" defer></script></body></html>
