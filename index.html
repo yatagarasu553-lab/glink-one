@@ -2621,6 +2621,7 @@ function gsmartRecentRender(){
  box.hidden=!found.length;area.replaceChildren();
  found.forEach(id=>{const f=GSMART_FEATURES.find(x=>x[0]===id);if(!f)return;const b=document.createElement('button');b.type='button';b.textContent=f[1]+' ›';b.onclick=()=>navigate(id);area.appendChild(b)})
 }
+const GSMART_DEFAULT_GRID_ORDER=['printDocs','cbCalc','reports','register','leads','ranking'];
 function gsmartGridItems(){
  const grid=document.querySelector('#home .home-workspace-grid');if(!grid)return [];
  return [...grid.children].filter(b=>b.tagName==='BUTTON').map(b=>{
@@ -2629,7 +2630,7 @@ function gsmartGridItems(){
 }
 function gsmartConfig(){
  const ids=gsmartGridItems().map(x=>x.id),stored=gsmartRead('workspace',{});
- const order=Array.isArray(stored.order)?stored.order.filter(x=>ids.includes(x)):[];
+ const order=Array.isArray(stored.order)?stored.order.filter(x=>ids.includes(x)):GSMART_DEFAULT_GRID_ORDER.filter(x=>ids.includes(x));
  const hidden=Array.isArray(stored.hidden)?stored.hidden.filter(x=>ids.includes(x)):[];
  return {order:[...new Set([...order,...ids])],hidden}
 }
