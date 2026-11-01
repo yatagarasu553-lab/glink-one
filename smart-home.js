@@ -116,20 +116,33 @@ function pointerSorting(){
  grid.addEventListener("click",e=>{if(used){e.preventDefault();e.stopImmediatePropagation();used=false}},true);
 }
 function foldLongPages(){
+ // Store UI-only collapse state on this device; never write to shared sales data.
+ const storageKey="glink-settings-collapse-v2";
+ let stored={};
+ try{const raw=JSON.parse(localStorage.getItem(storageKey)||"{}");if(raw&&typeof raw==="object"&&!Array.isArray(raw))stored=raw}catch{}
+ const persist=()=>{try{localStorage.setItem(storageKey,JSON.stringify(stored))}catch(e){console.warn("折りたたみ状態を保存できません",e)}};
  for(const pageName of ["settings","cbCalc"]){
   const page=$(pageName);if(!page)continue;
   const panels=[...page.children].filter(el=>el.classList?.contains("panel"));
   panels.forEach((panel,index)=>{
-   if(index===0||panel.dataset.gfoldReady)return;
+   if(panel.dataset.gfoldReady)return;
    const head=panel.querySelector(":scope > .sectiontitle");
    if(!head)return;
    panel.dataset.gfoldReady="1";
-   const title=head.textContent.trim();const b=document.createElement("button");
-   b.type="button";b.className="gfold-toggle tinybtn";b.textContent="閉じる −";b.setAttribute("aria-label",title+"の詳細を開閉");b.setAttribute("aria-expanded","true");
-   head.appendChild(b);
-   b.onclick=()=>{const collapsed=panel.classList.toggle("gfold-collapsed");b.textContent=collapsed?"開く ＋":"閉じる −";b.setAttribute("aria-expanded",String(!collapsed))};
-   // Keep everything initially expanded to preserve familiar behavior and avoid hidden required fields.
-  })
+   const title=head.textContent.trim(),key=pageName+":"+(panel.id||index);
+   const b=document.createElement("button");
+   b.type="button";b.className="gfold-toggle tinybtn";
+   b.setAttribute("aria-label",title+"の詳細を開閉");
+   const defaultCollapsed=pageName==="settings";
+   const collapsed=pageName==="settings"?(typeof stored[key]==="boolean"?stored[key]:defaultCollapsed):false;
+   function reflect(isCollapsed){
+    panel.classList.toggle("gfold-collapsed",isCollapsed);
+    b.textContent=isCollapsed?"開く ＋":"閉じる −";
+    b.setAttribute("aria-expanded",String(!isCollapsed));
+   }
+   head.appendChild(b);reflect(collapsed);
+   b.onclick=()=>{const next=!panel.classList.contains("gfold-collapsed");reflect(next);if(pageName==="settings"){stored[key]=next;persist()}};
+  });
  }
 }
 
