@@ -1207,9 +1207,10 @@ async function glinkIssueStaffAccount(){
 }
 $('issueStaffAccount').onclick=async()=>{try{await glinkIssueStaffAccount()}catch(e){$('issueStaffStatus').textContent='発行エラー：'+e.message}};
 let glinkManagedAccounts=[];
+let glinkAccountListInFlight=null,glinkAccountLastLoaded=0;
 function glinkManagedAccountSelect(){
  const a=glinkManagedAccounts.find(x=>x.user_id===$('manageAccountUser').value);
- $('manageAccountCurrent').textContent=a?'現在のログイン：'+a.login_id+' / '+({admin:'管理者',member:'一般スタッフ',sp:'SP'}[a.role]||'一般スタッフ')+(a.kind==='email'?'（従来のメール方式）':'（ID方式）'):'アカウントを選択してください。';
+ $('manageAccountCurrent').textContent=a?'現在のログイン：'+(a.login_id||'未取得')+' / '+({admin:'管理者',member:'一般スタッフ',sp:'SP'}[a.role]||'一般スタッフ')+(a.kind==='email'?'（従来のメール方式）':'（ID方式）'):'アカウントを選択してください。';
  $('manageAccountId').value='';
  $('manageAccountPass').value='';
  if($('manageAccountRole'))$('manageAccountRole').value=['admin','member','sp'].includes(a?.role)?a.role:'member';
@@ -1245,18 +1246,47 @@ async function glinkChangeManagedRole(){
 }
 $('manageAccountRoleSave').onclick=async()=>{try{await glinkChangeManagedRole()}catch(e){$('manageAccountRoleStatus').textContent='権限変更エラー：'+e.message}};
 async function glinkLoadManagedAccounts(){
- if(activeRole!=='admin'||!cloudSession||!cloudReady||cloudDirty)throw Error('管理者としてTEAM SYNCを完了してください');
- const button=$('manageAccountsLoad');button.disabled=true;
- try{
-  const data=await glinkManageAccountRequest({action:'list'});
-  glinkManagedAccounts=Array.isArray(data.accounts)?data.accounts:[];
-  const sel=$('manageAccountUser'),before=sel.value;
-  sel.innerHTML='<option value="">スタッフを選択してください</option>'+glinkManagedAccounts.map(a=>'<option value="'+escapeHtml(a.user_id)+'">'+escapeHtml(a.name||'名前未設定')+'（'+escapeHtml(a.login_id)+'）</option>').join('');
-  if(glinkManagedAccounts.some(a=>a.user_id===before))sel.value=before;
+ if(activeRole!=='admin'||!cloudSession)throw Error('管理者としてログインしてください');
+ if(!cloudValid())throw Error('TEAM SYNCの接続設定を確認してください');
+ if(glinkAccountListInFlight)return glinkAccountListInFlight;
+ const button=$('manageAccountsLoad'),status=$('manageAccountStatus'),selector=$('manageAccountUser');
+ button.disabled=true;status.textContent='スタッフ一覧を読み込んでいます…';
+ glinkAccountListInFlight=(async()=>{
+  let accounts=[];
+  try{
+   const data=await glinkManageAccountRequest({action:'list'});
+   if(!Array.isArray(data.accounts))throw Error('アカウント一覧の形式が不正です');
+   accounts=data.accounts;
+  }catch(primaryError){
+   // The team membership list is sufficient to select a member for permission changes,
+   // even if the optional login-ID management service is unavailable.
+   try{
+    const rows=await authorized(()=>cloudFetch('/rest/v1/team_members?team_id=eq.'+encodeURIComponent(cloudCfg.team)+'&select=user_id,staff_name,role&order=staff_name.asc'));
+    if(!Array.isArray(rows))throw Error('店舗メンバー一覧が取得できません');
+    accounts=rows.map(x=>({user_id:x.user_id,name:x.staff_name||'名前未設定',role:x.role,login_id:'ログインID非表示',kind:'unknown'}));
+    status.textContent='スタッフ名を読み込みました（ID管理サービスには接続できませんでした）。';
+   }catch(fallbackError){throw Error('一覧を取得できません：'+fallbackError.message+' / '+primaryError.message)}
+  }
+  glinkManagedAccounts=accounts.filter(x=>x&&x.user_id&&x.name);
+  const previous=selector.value;selector.replaceChildren();
+  const hint=document.createElement('option');hint.value='';hint.textContent=glinkManagedAccounts.length?'スタッフを選択してください':'登録されたスタッフが見つかりません';
+  selector.appendChild(hint);
+  for(const a of glinkManagedAccounts){
+   const option=document.createElement('option');option.value=a.user_id;
+   option.textContent=a.name+(a.login_id&&a.login_id!=='ログインID非表示'?'（'+a.login_id+'）':'');
+   selector.appendChild(option);
+  }
+  if(glinkManagedAccounts.some(x=>x.user_id===previous))selector.value=previous;
   glinkManagedAccountSelect();
-  $('manageAccountStatus').textContent=glinkManagedAccounts.length+'件のアカウントを取得しました。';
- }finally{button.disabled=false}
+  glinkAccountLastLoaded=Date.now();
+  status.textContent=glinkManagedAccounts.length+'名のスタッフを読み込みました。名前を選択してください。';
+  return glinkManagedAccounts;
+ })();
+ try{return await glinkAccountListInFlight}
+ catch(e){status.textContent='読み込みエラー：'+e.message;throw e}
+ finally{glinkAccountListInFlight=null;button.disabled=false}
 }
+
 async function glinkUpdateManagedAccount(){
  if(activeRole!=='admin'||!cloudReady||cloudDirty)throw Error('管理者としてTEAM SYNCを完了してください');
  const a=glinkManagedAccounts.find(x=>x.user_id===$('manageAccountUser').value);
@@ -2749,6 +2779,16 @@ $('pageBack').onclick=()=>{
  navigationHistory.pop();
  const prev=navigationHistory[navigationHistory.length-1]||'home';
  navigate(prev);historyGoingBack=false;
+};
+// Load the staff list as soon as an administrator opens settings; never touch shared sales data.
+const beforeAccountListNavigate=navigate;
+navigate=function(page){
+ beforeAccountListNavigate(page);
+ if(document.getElementById('settings')?.classList.contains('active')&&activeRole==='admin'&&cloudSession){
+  if(!glinkAccountLastLoaded||Date.now()-glinkAccountLastLoaded>120000){
+   glinkLoadManagedAccounts().catch(e=>console.warn('スタッフ一覧',e.message));
+  }
+ }
 };
 const GLINK_PUSH_PUBLIC='BHSpkTeaXMkUYLqaF1zfHPnI5GeHhNgTvFxv5m4lJLCsylxgJQEB-7CpYuVT4l6bOSPhH66hsJl8K8VPem56npo';
 let glinkPushDevice=null;
