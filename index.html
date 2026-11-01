@@ -2596,80 +2596,6 @@ $('homeSyncRefresh').onclick=async()=>{
 
 
 
-const GSMART_FEATURES=[
-['printDocs','書類印刷','印刷 PDF 書類'],['cbCalc','CB計算','特典 キャッシュバック'],
-['reports','日報入力','活動報告 日報'],['register','個別実績','契約 登録'],
-['leads','見込み管理','再来店 カレンダー'],['ranking','ランキング','順位 成績'],
-['monthlyArchive','月別分析','月間 着地 グラフ'],['reportImage','活動報告画像','PNG 画像'],
-['announcements','お知らせ','連絡'],['team','チーム共有','同期 TEAM SYNC'],
-['mypage','マイページ','プロフィール'],['pushSettings','iPhone通知','通知'],
-['login','ログイン','アカウント'],['paste','店舗報告コピペ','店舗日報','admin'],
-['analytics','店舗分析','月末 詳細','admin'],['staffGoals','個人目標','目標','admin'],
-['settings','店舗設定','管理者 設定','admin']];
-function gsmartStorageKey(kind){return 'glink-smart-'+kind+'-v1-'+(cloudSession&&cloudSession.user?cloudSession.user.id:'guest')}
-function gsmartAllowed(id){const f=GSMART_FEATURES.find(x=>x[0]===id);return !!f&&(!f[3]||activeRole==='admin')}
-function gsmartRead(key,fallback){try{const value=JSON.parse(localStorage.getItem(gsmartStorageKey(key))||'null');return value===null?fallback:value}catch{return fallback}}
-function gsmartSave(key,value){try{localStorage.setItem(gsmartStorageKey(key),JSON.stringify(value))}catch(e){console.warn('Home preference save',e)}}
-function gsmartSearch(){
- const q=$('gsmartSearch').value.trim().toLocaleLowerCase();
- const root=$('gsmartSearchResults');root.replaceChildren();root.hidden=!q;if(!q)return;
- const matched=GSMART_FEATURES.filter(x=>gsmartAllowed(x[0])&&(x[1]+' '+x[2]).toLocaleLowerCase().includes(q)).slice(0,9);
- if(!matched.length){const p=document.createElement('p');p.className='muted micro';p.textContent='一致する機能がありません';root.appendChild(p)}
- matched.forEach(f=>{const b=document.createElement('button');b.type='button';const title=document.createElement('b');title.textContent=f[1];const hint=document.createElement('small');hint.textContent='開く ›';b.append(title,hint);b.onclick=()=>{$('gsmartSearch').value='';gsmartSearch();navigate(f[0])};root.appendChild(b)})
-}
-function gsmartRecentRecord(page){
- if(page==='home'||!gsmartAllowed(page))return;
- const items=gsmartRead('recent',[]);
- const prior=Array.isArray(items)?items.filter(x=>typeof x==='string'&&x!==page&&gsmartAllowed(x)):[];
- gsmartSave('recent',[page,...prior].slice(0,5))
-}
-function gsmartRecentRender(){
- const box=$('gsmartRecent'),area=$('gsmartRecentItems');if(!box||!area)return;
- const list=gsmartRead('recent',[]);const found=Array.isArray(list)?list.filter(x=>gsmartAllowed(x)).slice(0,4):[];
- box.hidden=!found.length;area.replaceChildren();
- found.forEach(id=>{const f=GSMART_FEATURES.find(x=>x[0]===id);if(!f)return;const b=document.createElement('button');b.type='button';b.textContent=f[1]+' ›';b.onclick=()=>navigate(id);area.appendChild(b)})
-}
-const GSMART_DEFAULT_GRID_ORDER=['printDocs','cbCalc','reports','register','leads','ranking'];
-function gsmartGridItems(){
- const grid=document.querySelector('#home .home-workspace-grid');if(!grid)return [];
- return [...grid.children].filter(b=>b.tagName==='BUTTON').map(b=>{
-  const raw=b.getAttribute('onclick')||'',id=b.dataset.smartPage||raw.split("navigate('")[1]?.split("'")[0];return {button:b,id};
- }).filter(x=>x.id)
-}
-function gsmartConfig(){
- const ids=gsmartGridItems().map(x=>x.id),stored=gsmartRead('workspace',{});
- const order=Array.isArray(stored.order)?stored.order.filter(x=>ids.includes(x)):GSMART_DEFAULT_GRID_ORDER.filter(x=>ids.includes(x));
- const hidden=Array.isArray(stored.hidden)?stored.hidden.filter(x=>ids.includes(x)):[];
- return {order:[...new Set([...order,...ids])],hidden}
-}
-function gsmartApply(){
- const items=gsmartGridItems(),grid=document.querySelector('#home .home-workspace-grid'),cfg=gsmartConfig();if(!grid)return;
- cfg.order.forEach(id=>{const obj=items.find(x=>x.id===id);if(!obj)return;obj.button.dataset.smartPage=id;grid.appendChild(obj.button);const off=cfg.hidden.includes(id);obj.button.hidden=off;obj.button.style.display=off?'none':''});
- gsmartEditorRender()
-}
-function gsmartEditorRender(){
- const area=$('gsmartWorkspaceOptions');if(!area||!$('gsmartEditorDetails').open)return;
- const cfg=gsmartConfig();area.replaceChildren();
- cfg.order.forEach((id,index)=>{
-  const row=document.createElement('div');row.className='gsmart-workspace-row';
-  const label=document.createElement('label'),check=document.createElement('input');check.type='checkbox';check.checked=!cfg.hidden.includes(id);
-  check.onchange=()=>{const c=gsmartConfig();c.hidden=check.checked?c.hidden.filter(x=>x!==id):[...c.hidden,id];gsmartSave('workspace',c);gsmartApply()};
-  label.append(check,document.createTextNode(' '+(GSMART_FEATURES.find(x=>x[0]===id)?.[1]||id)));row.appendChild(label);
-  const actions=document.createElement('div');
-  [-1,1].forEach(step=>{const b=document.createElement('button');b.type='button';b.textContent=step<0?'↑':'↓';b.disabled=index+step<0||index+step>=cfg.order.length;
-   b.setAttribute('aria-label','順番を'+(step<0?'上':'下')+'に移動');
-   b.onclick=()=>{const c=gsmartConfig(),i=c.order.indexOf(id);if(i<0)return;const swap=c.order[i+step];c.order[i+step]=id;c.order[i]=swap;gsmartSave('workspace',c);gsmartApply()};actions.appendChild(b)});
-  row.appendChild(actions);area.appendChild(row)
- })
-}
-function gsmartRefreshHome(){gsmartRecentRender();gsmartApply()}
-$('gsmartSearch').addEventListener('input',gsmartSearch);
-$('gsmartSearch').addEventListener('keydown',e=>{if(e.key==='Escape'){$('gsmartSearch').value='';gsmartSearch();$('gsmartSearch').blur()}});
-$('gsmartClearRecent').onclick=()=>{gsmartSave('recent',[]);gsmartRecentRender()};
-$('gsmartEditorDetails').addEventListener('toggle',()=>{if($('gsmartEditorDetails').open)gsmartEditorRender()});
-$('gsmartResetWorkspace').onclick=()=>{gsmartSave('workspace',{});gsmartApply()};
-gsmartRefreshHome();
-
 let navigationHistory=['home'],historyGoingBack=false;
 const screenNames={pushSettings:'iPhone通知',home:'ホーム',register:'個別実績',leads:'見込み・再来店',ranking:'ランキング',reports:'日報',printDocs:'店舗書類',reportImage:'活動報告画像',cbCalc:'CB計算',team:'チーム共有',login:'ログイン',mypage:'マイページ',announcements:'お知らせ',settings:'設定',paste:'店舗日報',analytics:'分析',staffGoals:'個人目標'};
 const beforeHistoryNavigate=navigate;
@@ -2678,7 +2604,7 @@ navigate=function(page){
  beforeHistoryNavigate(page);
  const current=document.querySelector('.screen.active')?.id||'home';
  if(!historyGoingBack&&current!==previous){navigationHistory.push(current);if(navigationHistory.length>12)navigationHistory.shift()}
- if(!historyGoingBack&&current!==previous)gsmartRecentRecord(current);if(current==='home')gsmartRefreshHome();
+ 
  $('pageBackBar').hidden=current==='home';
  $('currentPageName').textContent=screenNames[current]||current;
 };
@@ -2942,4 +2868,4 @@ if(reportRateForm){
  reportRateForm.addEventListener('change',updateReportLiveRates);
  updateReportLiveRates();
 }
-</script></body></html>
+</script><script src="./smart-home.js?v=20261101fix3" defer></script></body></html>
