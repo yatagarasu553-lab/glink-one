@@ -1113,7 +1113,7 @@ async function glinkIssueStaffAccount(){
     try{await glinkSetMemberRole(created.user_id,'sp')}catch(e){status.textContent='IDは作成されましたがSP権限の適用に失敗しました。権限変更画面から修正してください：'+e.message;return}
   }
   $('issueStaffPass').value='';
-  status.textContent='発行完了：'+name+' / ID '+id+' / '+(role==='admin'?'管理者':'一般スタッフ')+'。初期パスワードは保存されません。本人に安全な方法で伝えてください。';
+  status.textContent='発行完了：'+name+' / ID '+id+' / '+({admin:'管理者',member:'一般スタッフ',sp:'SP'}[role]||'一般スタッフ')+'。初期パスワードは保存されません。本人に安全な方法で伝えてください。';
   alert('IDを発行しました。ログインID：'+id+'\n初期パスワードはこの画面に保存されません。');
  }finally{button.disabled=false}
 }
@@ -2916,4 +2916,4 @@ if(reportRateForm){
  reportRateForm.addEventListener('change',updateReportLiveRates);
  updateReportLiveRates();
 }
-</script><script src="./smart-home.js?v=20261101nosearch" defer></script></body></html>
+</script><script src="./smart-home.js?v=20261101sp" defer></script></body></html>
