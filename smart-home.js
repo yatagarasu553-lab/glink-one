@@ -6,7 +6,7 @@ const defaults=["printDocs","cbCalc","reports","register","leads","ranking"];
 const glyphs={monthlyArchive:"▥",reportImage:"▧",announcements:"◉",team:"☁",mypage:"♙",pushSettings:"♧",login:"🔐",paste:"▣",analytics:"▥",staffGoals:"◎",settings:"⚙"};
 const admin=()=>{try{return typeof activeRole!=="undefined"&&activeRole==="admin"}catch{return false}};
 const isSP=()=>{try{return typeof activeRole!=="undefined"&&activeRole==="sp"}catch{return false}};
-const allowed=id=>{const f=catalog.find(x=>x[0]===id);return !!f&&!(isSP()&&id==="reportImage")&&(!f[3]||admin())};
+const allowed=id=>{const f=catalog.find(x=>x[0]===id);if(!f)return false;if(typeof window.glinkCanViewFeature==="function")return window.glinkCanViewFeature(id);return !(isSP()&&id==="reportImage")&&(!f[3]||admin())};
 const key=kind=>{let user="guest";try{if(typeof cloudSession!=="undefined"&&cloudSession?.user?.id)user=cloudSession.user.id}catch{}return "glink-smart-"+kind+"-v1-"+user};
 const read=(kind,fallback)=>{try{return JSON.parse(localStorage.getItem(key(kind))||"null")??fallback}catch{return fallback}};
 const save=(kind,v)=>{try{localStorage.setItem(key(kind),JSON.stringify(v))}catch(e){console.warn("Smart preference",e)}};
