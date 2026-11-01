@@ -103,13 +103,15 @@ function pointerSorting(){
     save("workspace",c);
     // Move the actual element without rerendering the controls during a drag.
     const rect=target.getBoundingClientRect();
-    grid.insertBefore(active,e.clientY<rect.top+rect.height/2?target:target.nextSibling);
+    grid.insertBefore(active,(e.clientY<rect.top+rect.height/2||(Math.abs(e.clientY-(rect.top+rect.height/2))<rect.height/2&&e.clientX<rect.left+rect.width/2))?target:target.nextSibling);
    }
   }
  },{passive:true});
- const stop=()=>{clear();if(active){active.classList.remove("gsmart-dragging");active=null;apply()}origin=null};
+ const stop=()=>{clear();if(active){active.classList.remove("gsmart-dragging");active=null;apply();setTimeout(()=>{used=false},150)}origin=null};
  window.addEventListener("pointerup",stop,{passive:true});
  window.addEventListener("pointercancel",stop,{passive:true});
+ // Preserve ordinary scrolling; prevent native page pan only after the long press activates.
+ grid.addEventListener("touchmove",e=>{if(active&&e.cancelable)e.preventDefault()},{passive:false});
  grid.addEventListener("click",e=>{if(used){e.preventDefault();e.stopImmediatePropagation();used=false}},true);
 }
 function foldLongPages(){
