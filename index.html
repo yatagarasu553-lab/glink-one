@@ -994,7 +994,7 @@ function updateRoleUI(){
   if(root.matches('form'))root.querySelectorAll('input,select,textarea,button').forEach(n=>n.disabled=readOnly);
   else root.disabled=readOnly;
  }
- document.querySelectorAll('#allTargetFields input,#settings input:not(#importFile)').forEach(n=>n.disabled=readOnly);
+ document.querySelectorAll('#allTargetFields input,#settings input:not(#importFile):not([data-feature])').forEach(n=>n.disabled=readOnly);
 }
 async function loadRole(){
  activeRole=null;
