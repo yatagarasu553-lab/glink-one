@@ -5,7 +5,8 @@ const catalog=[["printDocs","書類印刷","書類 印刷 PDF"],["cbCalc","CB計
 const defaults=["printDocs","cbCalc","reports","register","leads","ranking"];
 const glyphs={monthlyArchive:"▥",reportImage:"▧",announcements:"◉",team:"☁",mypage:"♙",pushSettings:"♧",login:"🔐",paste:"▣",analytics:"▥",staffGoals:"◎",settings:"⚙"};
 const admin=()=>{try{return typeof activeRole!=="undefined"&&activeRole==="admin"}catch{return false}};
-const allowed=id=>{const f=catalog.find(x=>x[0]===id);return !!f&&(!f[3]||admin())};
+const isSP=()=>{try{return typeof activeRole!=="undefined"&&activeRole==="sp"}catch{return false}};
+const allowed=id=>{const f=catalog.find(x=>x[0]===id);return !!f&&!(isSP()&&id==="reportImage")&&(!f[3]||admin())};
 const key=kind=>{let user="guest";try{if(typeof cloudSession!=="undefined"&&cloudSession?.user?.id)user=cloudSession.user.id}catch{}return "glink-smart-"+kind+"-v1-"+user};
 const read=(kind,fallback)=>{try{return JSON.parse(localStorage.getItem(key(kind))||"null")??fallback}catch{return fallback}};
 const save=(kind,v)=>{try{localStorage.setItem(key(kind),JSON.stringify(v))}catch(e){console.warn("Smart preference",e)}};
@@ -140,6 +141,7 @@ $("gsmartEditorDetails").querySelector("summary")?.addEventListener("click",()=>
 $("gsmartColumns")?.addEventListener("change",e=>{save("columns",Number(e.target.value)===2?2:3);columns()});
 $("gsmartResetWorkspace")?.addEventListener("click",()=>{save("workspace",{order:[...defaults,...catalog.map(x=>x[0]).filter(x=>!defaults.includes(x))],hidden:catalog.map(x=>x[0]).filter(x=>!defaults.includes(x)),pins:[]});apply()});
 $("gsmartClearRecent")?.addEventListener("click",()=>{save("recent",[]);recent()});
+window.addEventListener("glink-role-changed",()=>{apply();recent()});
 addMissingFeatures();migrateLegacy();addMissingFeatures();migrateLegacy();apply();columns();pointerSorting();foldLongPages();recent();search();
 let previous=document.querySelector(".screen.active")?.id||"home";
 const host=document.querySelector("main");
