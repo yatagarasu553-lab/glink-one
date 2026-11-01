@@ -960,8 +960,10 @@ function roleFeatureReset(){
  $('roleFeatureStatus').textContent='標準設定を選択しました。保存ボタンで反映します。';
 }
 async function saveRoleFeatureSettings(){
- if(activeRole!=='admin'||!cloudSession||!cloudReady||cloudDirty)throw Error('管理者でTEAM SYNCを完了してください');
- if(!roleFeatureLoaded)throw Error('機能設定を取得できていません。再ログインしてから保存してください');
+ if(activeRole!=='admin'||!cloudSession)throw Error('管理者としてログインしてください');
+ if(!cloudValid())throw Error('クラウドの接続設定を確認してください');
+ // Feature visibility settings have their own RLS policy and are independent of sales-data synchronization.
+ if(!roleFeatureLoaded){await loadRoleFeatureRecords();if(!roleFeatureLoaded)throw Error('権限別の表示設定を読み込めません。通信状態を確認してから再度お試しください')}
  const role=$('roleFeatureRole').value;
  const entries=[...document.querySelectorAll('#roleFeatureOptions input[data-feature]')].filter(input=>!input.disabled)
   .map(input=>({team_id:cloudCfg.team,role,feature_id:input.dataset.feature,enabled:input.checked}));
