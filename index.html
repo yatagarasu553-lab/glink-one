@@ -1225,7 +1225,9 @@ async function glinkManageAccountRequest(data){
  });
 }
 async function glinkSetMemberRole(userId,role){
- if(activeRole!=='admin'||!cloudSession||!cloudReady||cloudDirty)throw Error('管理者としてTEAM SYNCを完了してください');
+ if(activeRole!=='admin'||!cloudSession)throw Error('管理者としてログインしてください');
+ if(!cloudValid())throw Error('クラウドの接続設定を確認してください');
+ // Role changes use a separate authenticated RPC; sales-data sync state is unrelated.
  if(!['admin','member','sp'].includes(role))throw Error('不正な権限です');
  const r=await authorized(()=>cloudFetchTimed(cloudCfg.url+'/rest/v1/rpc/glink_set_member_role',{method:'POST',headers:{apikey:cloudCfg.key,Authorization:'Bearer '+cloudSession.access_token,'Content-Type':'application/json'},body:JSON.stringify({p_team_id:cloudCfg.team,p_user_id:userId,p_role:role})},12000));
  let data;try{data=await r.json()}catch{data=null}
