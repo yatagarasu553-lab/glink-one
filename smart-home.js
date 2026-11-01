@@ -133,9 +133,8 @@ function foldLongPages(){
 }
 
 function init(){
-if(!$("gsmartSearch")||!$("gsmartEditorDetails"))return;
-$("gsmartSearch").addEventListener("input",search);
-$("gsmartSearch").addEventListener("change",search);
+if(!$("gsmartEditorDetails"))return;
+if($("gsmartSearch")){$("gsmartSearch").addEventListener("input",search);$("gsmartSearch").addEventListener("change",search)}
 $("gsmartEditorDetails").addEventListener("toggle",editor);
 $("gsmartEditorDetails").querySelector("summary")?.addEventListener("click",()=>requestAnimationFrame(editor));
 $("gsmartColumns")?.addEventListener("change",e=>{save("columns",Number(e.target.value)===2?2:3);columns()});
